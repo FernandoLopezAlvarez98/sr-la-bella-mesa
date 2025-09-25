@@ -3,6 +3,7 @@
  * Clase Connection - Conexión a base de datos Azure MySQL
  * Sistema La Bella Mesa
  */
+// prueba de cabio en el repositorio
 
 class Connection {
     private static $instance = null;
