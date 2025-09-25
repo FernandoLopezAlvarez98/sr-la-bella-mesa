@@ -44,10 +44,10 @@ class Connection {
             
             $this->pdo = new PDO($dsn, $this->username, $this->password, $options);
             
-            echo " Conexión exitosa a Azure MySQL\n";
+            //echo " Conexión exitosa a Azure MySQL\n";
             
         } catch (PDOException $e) {
-            echo " Error de conexión: " . $e->getMessage() . "\n";
+            //echo " Error de conexión: " . $e->getMessage() . "\n";
             throw $e;
         }
     }
@@ -98,7 +98,7 @@ class Connection {
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            echo "Error en consulta: " . $e->getMessage() . "\n";
+            //echo "Error en consulta: " . $e->getMessage() . "\n";
             throw $e;
         }
     }

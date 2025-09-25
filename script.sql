@@ -10,6 +10,50 @@ CREATE SCHEMA IF NOT EXISTS `labellamesa` DEFAULT CHARACTER SET utf8 COLLATE utf
 USE `labellamesa` ;
 
 -- -----------------------------------------------------
+-- Table `labellamesa`.`permiso`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `labellamesa`.`permiso` (
+  `id_permiso` INT AUTO_INCREMENT,
+  `nombre` VARCHAR(45) NOT NULL,
+  `descripcion` VARCHAR(100) NULL,
+  PRIMARY KEY (`id_permiso`),
+  UNIQUE INDEX `id_permiso_UNIQUE` (`id_permiso` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `labellamesa`.`rol`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `labellamesa`.`rol` (
+  `id_rol` INT AUTO_INCREMENT,
+  `nombre` VARCHAR(45) NOT NULL,
+  `descripcion` VARCHAR(100) NULL,
+  PRIMARY KEY (`id_rol`),
+  UNIQUE INDEX `id_rol_UNIQUE` (`id_rol` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table `labellamesa`.`rol_permiso`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `labellamesa`.`rol_permiso` (
+  `id_rol` INT,
+  `id_permiso` INT NOT NULL,
+  PRIMARY KEY (`id_rol`, `id_permiso`),
+  INDEX `fk_id_rol_idx` (`id_rol` ASC) VISIBLE,
+  INDEX `fk_id_permiso_idx` (`id_permiso` ASC) VISIBLE,
+  CONSTRAINT `fk_rol_permiso_rol`
+    FOREIGN KEY (`id_rol`)
+    REFERENCES `labellamesa`.`rol` (`id_rol`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_rol_permiso_permiso`
+    FOREIGN KEY (`id_permiso`)
+    REFERENCES `labellamesa`.`permiso` (`id_permiso`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
 -- Table `labellamesa`.`usuario`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `labellamesa`.`usuario` (
@@ -18,12 +62,17 @@ CREATE TABLE IF NOT EXISTS `labellamesa`.`usuario` (
   `correo` VARCHAR(45) NULL,
   `telefono` VARCHAR(10) NOT NULL,
   `password_hash` VARCHAR(256) NOT NULL,
-  `rol` VARCHAR(45) NOT NULL,
+  `rol` INT NOT NULL,
   `fecha_registro` DATE NOT NULL,
   `foto_perfil` VARCHAR(1000) NULL,
   `ultimo_acceso` TIMESTAMP DEFAULT  CURRENT_TIMESTAMP ON UPDATE  CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (`id_usuario`),
-  UNIQUE INDEX `id_usuario_UNIQUE` (`id_usuario` ASC) VISIBLE)
+  UNIQUE INDEX `id_usuario_UNIQUE` (`id_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_rol_usuario`
+    FOREIGN KEY (`rol`)
+    REFERENCES `labellamesa`.`rol` (`id_rol`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
@@ -75,21 +124,21 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `labellamesa`.`reservacion` (
   `id_reservacion` VARCHAR(36) NOT NULL,
-  `id_usario` VARCHAR(36) NOT NULL,
+  `id_usuario` VARCHAR(36) NOT NULL,
   `id_restaurante` VARCHAR(36) NOT NULL,
   `id_mesa` VARCHAR(36) NOT NULL,
   `fecha_reserva` DATE NOT NULL,
   `hora_reserva` TIME NOT NULL,
   `num_personas` INT NOT NULL,
   `estado` VARCHAR(45) NOT NULL,
-  `fecha_creaciom` DATETIME NOT NULL,
-  `fecha_actulizacion` TIMESTAMP DEFAULT  CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+  `fecha_creacion` DATETIME NOT NULL,
+  `fecha_actualizacion` TIMESTAMP DEFAULT  CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY (`id_reservacion`),
-  INDEX `fk_id_usuario_reservacion_idx` (`id_usario` ASC) VISIBLE,
+  INDEX `fk_id_usuario_reservacion_idx` (`id_usuario` ASC) VISIBLE,
   INDEX `fk_id_restaurante_reservacion_idx` (`id_restaurante` ASC) VISIBLE,
   INDEX `fk_id_mesa_reservacion_idx` (`id_mesa` ASC) VISIBLE,
   CONSTRAINT `fk_id_usuario_reservacion`
-    FOREIGN KEY (`id_usario`)
+    FOREIGN KEY (`id_usuario`)
     REFERENCES `labellamesa`.`usuario` (`id_usuario`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
