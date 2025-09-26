@@ -87,3 +87,8 @@ git push origin main
 ```bash
 git push origin main
 ```
+
+---
+### Comando para ejecutar el proyecto:
+```bash
+php -S localhost:8000
