@@ -70,3 +70,8 @@ git commit -m "Descripción clara de los cambios realizados"
 ```bash
 git push origin main
 ```
+
+### Para actualizar los cambios de respositorio remoto al local:
+```bash
+git push origin main
+```
