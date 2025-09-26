@@ -3,12 +3,19 @@ require_once '../controllers/AuthController.php';
 
 $authController = new AuthController();
 $error = '';
+$success = '';
 
 if ($_POST) {
-    $result = $authController->login($_POST['email'], $_POST['password']);
+    $result = $authController->register(
+        $_POST['nombre'], 
+        $_POST['correo'], 
+        $_POST['telefono'], 
+        $_POST['password'], 
+        $_POST['confirm_password']
+    );
+    
     if ($result['success']) {
-        header('Location: dashboard.php');
-        exit;
+        $success = $result['message'];
     } else {
         $error = $result['message'];
     }
@@ -24,7 +31,7 @@ if ($_POST) {
   <!-- CSS Files -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="src/css/style_animation.css">
+  <link rel="stylesheet" href="style_animation.css">
   
 </head>
 <body>
@@ -68,6 +75,9 @@ if ($_POST) {
             <li class="nav-item">
               <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="inicio sesion.html"><i class="fas fa-sign-in-alt"></i> Acceso</a>
+            </li>
           </ul>
 
           <!-- Buscador a la derecha -->
@@ -91,42 +101,112 @@ if ($_POST) {
     
     <!-- Main Content -->
     <div class="content text-center text-white">
-       <!-- Login Container -->
-<div class="container d-flex justify-content-center align-items-center vh-100">
-  <div class="login-box bg-dark text-white p-5 rounded shadow-lg" style="max-width: 400px; width: 100%;">
-    <h2 class="text-center mb-4">Iniciar Sesión</h2>
-    <p class="text-center mb-4">Accede con tu cuenta de administrador o usuario</p>
+     <!-- Contenedor Principal -->
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="bg-dark text-white p-5 rounded shadow-lg" style="max-width: 450px; width: 100%; ;">
+    <div class="card-body text-center text-white">
+      <h2 class="card-title mb-3">Crear Cuenta</h2>
+      <p class="card-text mb-4">Regístrate para acceder al sistema de reservas.</p>
 
-    <?php if ($error): ?>
-      <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
+      <!-- Panel de registro -->
+      <?php if ($error): ?>
+          <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?>
+          </div>
+      <?php endif; ?>
+      
+      <?php if ($success): ?>
+          <div class="alert alert-success">
+              <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success); ?>
+              <br><br>
+              <a href="login.php" class="btn btn-success">
+                  <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión Ahora
+              </a>
+          </div>
+      <?php else: ?>
+|
+      <form method="POST" action="" id="registerForm">
+          <div class="row">
+              <div class="col-md-6">
+                  <div class="mb-3">
+                      <label for="nombre" class="form-label">
+                          <i class="fas fa-user me-1"></i>Nombre Completo
+                      </label>
+                      <input type="text" class="form-control" id="nombre" name="nombre" 
+                             placeholder="Ingresa tu nombre completo" required
+                             value="<?php echo isset($_POST['nombre']) ? htmlspecialchars($_POST['nombre']) : ''; ?>">
+                  </div>
+              </div>
+              
+              <div class="col-md-6">
+                  <div class="mb-3">
+                      <label for="telefono" class="form-label">
+                          <i class="fas fa-phone me-1"></i>Teléfono
+                      </label>
+                      <input type="tel" class="form-control" id="telefono" name="telefono" 
+                             placeholder="Ej: 1234567890" required
+                             value="<?php echo isset($_POST['telefono']) ? htmlspecialchars($_POST['telefono']) : ''; ?>">
+                  </div>
+              </div>
+          </div>
+          
+          <div class="mb-3">
+              <label for="correo" class="form-label">
+                  <i class="fas fa-envelope me-1"></i>Correo Electrónico
+              </label>
+              <input type="email" class="form-control" id="correo" name="correo" 
+                     placeholder="tu@ejemplo.com" required
+                     value="<?php echo isset($_POST['correo']) ? htmlspecialchars($_POST['correo']) : ''; ?>">
+          </div>
+          
+          <div class="row">
+              <div class="col-md-6">
+                  <div class="mb-3">
+                      <label for="password" class="form-label">
+                          <i class="fas fa-lock me-1"></i>Contraseña
+                      </label>
+                      <input type="password" class="form-control" id="password" name="password" 
+                             placeholder="Mínimo 6 caracteres" required>
+                      <div class="form-text">
+                          <small>La contraseña debe tener al menos 6 caracteres</small>
+                      </div>
+                  </div>
+              </div>
+              
+              <div class="col-md-6">
+                  <div class="mb-3">
+                      <label for="confirm_password" class="form-label">
+                          <i class="fas fa-lock me-1"></i>Confirmar Contraseña
+                      </label>
+                      <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                             placeholder="Repite la contraseña" required>
+                  </div>
+              </div>
+          </div>
+          
+          <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="terms" required>
+              <label class="form-check-label" for="terms">
+                  Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">términos y condiciones</a>
+              </label>
+          </div>
+          
+          <button type="submit" class="btn btn-primary w-100 btn-lg">
+              <i class="fas fa-user-plus me-2"></i>Crear Cuenta
+          </button>
+      </form>
 
-    <form action="" method="POST" class="login-form">
-      <div class="mb-3">
-        <input type="email" id="email" name="email" class="form-control" placeholder="Correo electrónico" required>
-      </div>
-      <div class="mb-3">
-        <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" required>
-      </div>
-      <div class="mb-3 form-check text-start">
-        <input type="checkbox" class="form-check-input" id="remember" name="remember">
-        <label class="form-check-label" for="remember">Recordarme</label>
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
-    </form>
+      <?php endif; ?>
 
-    <div class="mt-3 text-center">
-      <a href="register.php" class="text-white">Crear cuenta</a> | 
-      <a href="#" class="text-white">¿Olvidaste tu contraseña?</a>
+      <div class="mt-3 text-center">
+        <a href="inicio sesion.html" class="text-white">¿Ya tienes cuenta? Iniciar sesión</a>
+      </div>
     </div>
   </div>
 </div>
 
-      <div class="buttons">
-        <a href="reservacion.html" class="btn btn-secondary" id="reserve-btn">
-          <i class="fas fa-calendar-alt"></i> Reservar Ahora
-        </a>
-      </div>
+
+
     </div>
     
     <!-- Scroll Down Indicator -->
@@ -274,7 +354,7 @@ if ($_POST) {
   </section>
 
   
-<!-- Información Restaurantes -->
+  <!-- Información Restaurantes -->
   <section id="restaurants" class="py-5 fade-in">
     <div class="container">
       <h2 class="text-center mb-4">Nuestros Restaurantes</h2>
