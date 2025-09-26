@@ -24,7 +24,7 @@
     <!-- Barra de navegación -->
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container-fluid">
-        <a href="index.html" class="navbar-brand logo">
+        <a href="index.php" class="navbar-brand logo">
           <i class="fas fa-utensils"></i> La Bella Mesa
         </a>
 
