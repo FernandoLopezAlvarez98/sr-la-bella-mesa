@@ -1,4 +1,18 @@
 <?php
+require_once '../controllers/AuthController.php';
+
+$authController = new AuthController();
+$error = '';
+
+if ($_POST) {
+    $result = $authController->login($_POST['email'], $_POST['password']);
+    if ($result['success']) {
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $error = $result['message'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -10,7 +24,7 @@
   <!-- CSS Files -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="/src/css/style_animation.css">
+  <link rel="stylesheet" href="src/css/style_animation.css">
   
 </head>
 <body>
@@ -20,7 +34,13 @@
   </div>
 
   <!-- Hero Section -->
-  <div class="hero d-flex flex-column justify-content-center align-items-center text-center text-white"></div>
+  <div class="hero">
+    <video autoplay muted loop>
+      <source src="videos/fondo.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+    <div class="overlay"></div>
+    
     <!-- Barra de navegación -->
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container-fluid">
@@ -37,19 +57,16 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link active" href="index.php"><i class="fas fa-home"></i> Inicio</a>
+              <a class="nav-link active" href="pantalla principal.html"><i class="fas fa-home"></i> Inicio</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
+              <a class="nav-link" href="REGISTRAR/index.html"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-images"></i> Galería</a>
+              <a class="nav-link" href="Galery.html"><i class="fas fa-images"></i> Galería</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="views/login.php"><i class="fas fa-sign-in-alt"></i> Acceso</a>
             </li>
           </ul>
 
@@ -74,16 +91,38 @@
     
     <!-- Main Content -->
     <div class="content text-center text-white">
-      <h1>La Bella Mesa</h1>
-      <p class="tagline">
-        Una experiencia culinaria excepcional en un ambiente elegante y acogedor.
-        Descubre nuestros sabores únicos preparados por chefs expertos.
-      </p>
+       <!-- Login Container -->
+<div class="container d-flex justify-content-center align-items-center vh-100">
+  <div class="login-box bg-dark text-white p-5 rounded shadow-lg" style="max-width: 400px; width: 100%;">
+    <h2 class="text-center mb-4">Iniciar Sesión</h2>
+    <p class="text-center mb-4">Accede con tu cuenta de administrador o usuario</p>
+
+    <?php if ($error): ?>
+      <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+
+    <form action="" method="POST" class="login-form">
+      <div class="mb-3">
+        <input type="email" id="email" name="email" class="form-control" placeholder="Correo electrónico" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" id="password" name="password" class="form-control" placeholder="Contraseña" required>
+      </div>
+      <div class="mb-3 form-check text-start">
+        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+        <label class="form-check-label" for="remember">Recordarme</label>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+    </form>
+
+    <div class="mt-3 text-center">
+      <a href="crear cuenta.html" class="text-white">Crear cuenta</a> | 
+      <a href="olvide contraseña .html" class="text-white">¿Olvidaste tu contraseña?</a>
+    </div>
+  </div>
+</div>
+
       <div class="buttons">
-        <a href="views/login.php" class="btn btn-primary" id="login-btn">
-          <i class="fas fa-sign-in-alt"></i> iniciar sesión
-        </a>
-        
         <a href="reservacion.html" class="btn btn-secondary" id="reserve-btn">
           <i class="fas fa-calendar-alt"></i> Reservar Ahora
         </a>
@@ -103,21 +142,21 @@
       <div id="foodCarousel" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
           <div class="carousel-item active">
-            <img src="/src/images/1.jpg" class="d-block w-100" alt="Plato gourmet con carne y vegetales">
+            <img src="1.jpg" class="d-block w-100" alt="Plato gourmet con carne y vegetales">
             <div class="carousel-caption d-none d-md-block">
               <h5>Exquisitos platos gourmet</h5>
               <p>Preparados por chefs de renombre internacional</p>
             </div>
           </div>
           <div class="carousel-item">
-            <img src="/src/images/2.jpg" class="d-block w-100" alt="Vista del restaurante con ambiente acogedor">
+            <img src="2.jpg" class="d-block w-100" alt="Vista del restaurante con ambiente acogedor">
             <div class="carousel-caption d-none d-md-block">
               <h5>Ambiente acogedor</h5>
               <p>Un espacio diseñado para disfrutar al máximo</p>
             </div>
           </div>
           <div class="carousel-item">
-            <img src="src/4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
+            <img src="4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
             <div class="carousel-caption d-none d-md-block">
               <h5>Postres de ensueño</h5>
               <p>El broche perfecto para una experiencia culinaria inolvidable</p>
@@ -235,14 +274,14 @@
   </section>
 
   
-  <!-- Información Restaurantes -->
+<!-- Información Restaurantes -->
   <section id="restaurants" class="py-5 fade-in">
     <div class="container">
       <h2 class="text-center mb-4">Nuestros Restaurantes</h2>
       <div class="row">
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="/src/images/1.2.jpg" class="card-img-top" alt="Restaurante 1">
+            <img src="1.2.jpg" class="card-img-top" alt="Restaurante 1">
             <div class="card-body">
               <h5 class="card-title">Restaurante Gourmet</h5>
               <p class="card-text">Especializado en cocina internacional con ingredientes premium.</p>
@@ -251,7 +290,7 @@
         </div>
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="/src/images/2.2.jpg" class="card-img-top" alt="Restaurante 2">
+            <img src="2.2.jpg" class="card-img-top" alt="Restaurante 2">
             <div class="card-body">
               <h5 class="card-title">La Cocina Mexicana</h5>
               <p class="card-text">Auténticos sabores mexicanos con un toque moderno.</p>
@@ -260,7 +299,7 @@
         </div>
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="/src/images/3.2.jpg" class="card-img-top" alt="Restaurante 3">
+            <img src="3.2.jpg" class="card-img-top" alt="Restaurante 3">
             <div class="card-body">
               <h5 class="card-title">Postres Deliciosos</h5>
               <p class="card-text">Variedad de postres caseros y exclusivos para endulzar tu día.</p>
@@ -270,6 +309,7 @@
       </div>
     </div>
   </section>
+
 
   <!-- NUEVA SECCIÓN: Testimonios -->
   <section class="testimonials py-5 fade-in">
@@ -686,13 +726,13 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
   const email = document.getElementById("loginEmail").value;
   const pass = document.getElementById("loginPassword").value;
 
-  // if(email && pass){
-  //   alert("✅ Inicio de sesión exitoso (ejemplo)");
-  //   const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
-  //   modal.hide();
-  // } else {
-  //   alert("❌ Por favor completa todos los campos");
-  // }
+  if(email && pass){
+    alert("✅ Inicio de sesión exitoso (ejemplo)");
+    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+    modal.hide();
+  } else {
+    alert("❌ Por favor completa todos los campos");
+  }
 });
 
 
@@ -846,7 +886,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
 
     // 12. Preloader de imágenes
     function preloadImages() {
-      const images = ['/src/images/1.jpg', '/src/images/2.jpg', '/src/images/4.jpg', '/src/images/restaurante1.jpg', '/src/images/restaurante2.jpg', '/src/images/restaurante3.jpg'];
+      const images = ['1.jpg', '2.jpg', '4.jpg', 'restaurante1.jpg', 'restaurante2.jpg', 'restaurante3.jpg'];
       let loadedImages = 0;
       
       images.forEach(imageSrc => {
