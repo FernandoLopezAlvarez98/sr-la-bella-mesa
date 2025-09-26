@@ -1,6 +1,6 @@
 # 🍽️ La Bella Mesa
 
-Proyecto de gestión para el restaurante **La Bella Mesa**.
+**La Bella Mesa**: Sistema para hacer reservaciones en línea en restaurantes.
 
 ---
 
@@ -13,7 +13,8 @@ Sistema de gestión integral para administrar pedidos, menú, mesas y reportes e
 - `controllers/` → Controladores de la aplicación  
 - `models/` → Modelos de datos  
 - `views/` → Vistas de la aplicación  
-- `utils/` → Utilidades y funciones auxiliares  
+- `utils/` → Utilidades y funciones auxiliares
+- `src/` → Recursos generales (imágenes, fuentes, etc.)  
 
 ---
 
