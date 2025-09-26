@@ -5,7 +5,17 @@
 ---
 
 ## 📖 Descripción
-Sistema de gestión integral para administrar pedidos, menú, mesas y reportes en el restaurante **La Bella Mesa**.
+Sistema para hacer reservas el línea en restaurantes, y cuenta con las siguientes funcionalidades.
+**Cliente**:
+- `Crear reservaciones en línea
+- `Buscar restaurante
+- `Ver información y reseñas de los restaurantes
+
+**Restaurante**:
+- `Recibir reservas
+- `Administrar las reservas
+- `Agregar información del restaurante para mayor visualización
+- `Gestionar usuarios
 
 ---
 
