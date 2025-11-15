@@ -19,59 +19,59 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- Hero Section -->
-  <div class="hero d-flex flex-column justify-content-center align-items-center text-center text-white"></div>
-    <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-      <div class="container-fluid">
-        <a href="index.php" class="navbar-brand logo">
-          <i class="fas fa-utensils"></i> La Bella Mesa
-        </a>
+  <!-- Barra de navegación -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+      <a href="index.php" class="navbar-brand logo">
+        <i class="fas fa-utensils"></i> La Bella Mesa
+      </a>
 
-        <!-- Botón hamburguesa -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
+      <!-- Botón hamburguesa -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-        <!-- Links + Buscador dentro del collapse -->
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link active" href="index.php"><i class="fas fa-home"></i> Inicio</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-images"></i> Galería</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="views/login.php"><i class="fas fa-sign-in-alt"></i> Acceso</a>
-            </li>
-          </ul>
+      <!-- Links + Buscador dentro del collapse -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="index.php"><i class="fas fa-home"></i> Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#"><i class="fas fa-images"></i> Galería</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="views/login.php"><i class="fas fa-sign-in-alt"></i> Acceso</a>
+          </li>
+        </ul>
 
-          <!-- Buscador a la derecha -->
-          <form class="d-flex ms-lg-3 mt-2 mt-lg-0" role="search" style="position: relative;">
-            <label for="buscador" class="visually-hidden">Buscar restaurante</label>
-            <input id="buscador"
-                   class="form-control me-2 flex-grow-1"
-                   type="search"
-                   placeholder="Buscar por ubicación (ej. ciudad, barrio)"
-                   aria-label="Buscar"
-                   style="max-width: 300px;"
-                   autocomplete="off">
-            <div class="search-suggestions" id="searchSuggestions"></div>
-            <button class="btn btn-primary" type="submit">
-              <i class="fas fa-search"></i>
-            </button>
-          </form>
-        </div>
+        <!-- Buscador a la derecha -->
+        <form class="d-flex ms-lg-3 mt-2 mt-lg-0" role="search" style="position: relative;">
+          <label for="buscador" class="visually-hidden">Buscar restaurante</label>
+          <input id="buscador"
+                 class="form-control me-2 flex-grow-1"
+                 type="search"
+                 placeholder="Buscar por ubicación (ej. ciudad, barrio)"
+                 aria-label="Buscar"
+                 style="max-width: 300px;"
+                 autocomplete="off">
+          <div class="search-suggestions" id="searchSuggestions"></div>
+          <button class="btn btn-primary" type="submit">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
       </div>
-    </nav>
-    
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="hero d-flex flex-column justify-content-center align-items-center text-center text-white">
     <!-- Main Content -->
     <div class="content text-center text-white">
       <h1>La Bella Mesa</h1>
@@ -81,10 +81,10 @@
       </p>
       <div class="buttons">
         <a href="views/login.php" class="btn btn-primary" id="login-btn">
-          <i class="fas fa-sign-in-alt"></i> iniciar sesión
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </a>
         
-        <a href="reservacion.html" class="btn btn-secondary" id="reserve-btn">
+        <a href="views/login.php" class="btn btn-secondary" id="reserve-btn">
           <i class="fas fa-calendar-alt"></i> Reservar Ahora
         </a>
       </div>
@@ -117,7 +117,7 @@
             </div>
           </div>
           <div class="carousel-item">
-            <img src="src/4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
+            <img src="/src/images/4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
             <div class="carousel-caption d-none d-md-block">
               <h5>Postres de ensueño</h5>
               <p>El broche perfecto para una experiencia culinaria inolvidable</p>
