@@ -9,12 +9,14 @@ class Connection {
     private static $instance = null;
     private $pdo;
     
+    // Configuración de base de datos (se cargan desde .env)
+    private $host;
+    private $database;
+    private $username;
+    private $password;
+    private $port;
+    
     // Configuración de base de datos (usar .env en producción)
-    private $host = 'tu-servidor.mysql.database.azure.com';
-    private $database = 'labellamesa';
-    private $username = 'tu_usuario';
-    private $password = 'tu_password';
-    private $port = 3306;
 
     private function __construct() {
         $this->connect();
@@ -55,38 +57,51 @@ class Connection {
 
     private function loadEnvVariables() {
         $envFile = dirname(__DIR__) . '/.env';
-        if (file_exists($envFile)) {
-            $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            foreach ($lines as $line) {
-                if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-                    list($key, $value) = explode('=', $line, 2);
-                    $key = trim($key);
-                    $value = trim($value, " \t\n\r\0\x0B\"'");
-                    
-                    switch ($key) {
-                        case 'HOST':
-                        case 'DB_HOST':
-                            $this->host = $value;
-                            break;
-                        case 'DATABASE':
-                        case 'DB_DATABASE':
-                            $this->database = $value;
-                            break;
-                        case 'USER':
-                        case 'DB_USERNAME':
-                            $this->username = $value;
-                            break;
-                        case 'PASSWORD':
-                        case 'DB_PASSWORD':
-                            $this->password = $value;
-                            break;
-                        case 'DB_PORT':
-                            $this->port = (int)$value;
-                            break;
-                    }
+        if (!file_exists($envFile)) {
+            throw new Exception("Archivo .env no encontrado en: " . $envFile);
+        }
+        
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+                list($key, $value) = explode('=', $line, 2);
+                $key = trim($key);
+                $value = trim($value, " \t\n\r\0\x0B\"'");
+                
+                switch ($key) {
+                    case 'HOST':
+                        $this->host = $value;
+                        break;
+                    case 'DATABASE':
+                        $this->database = $value;
+                        break;
+                    case 'USER':
+                        $this->username = $value;
+                        break;
+                    case 'PASSWORD':
+                        $this->password = $value;
+                        break;
+                    case 'PORT':
+                        $this->port = (int)$value;
+                        break;
                 }
             }
         }
+        
+        // Validar que todas las variables requeridas estén presentes
+        if (empty($this->host)) {
+            throw new Exception("Variable HOST no encontrada en .env");
+        }
+        if (empty($this->database)) {
+            throw new Exception("Variable DATABASE no encontrada en .env");
+        }
+        if (empty($this->username)) {
+            throw new Exception("Variable USER no encontrada en .env");
+        }
+        if (empty($this->port)) {
+            throw new Exception("Variable PORT no encontrada en .env");
+        }
+        // Nota: PASSWORD puede estar vacía, es válido para localhost
     }
 
     public function getConnection() {

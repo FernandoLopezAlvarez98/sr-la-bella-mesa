@@ -54,3 +54,12 @@ config/database.js
 # Archivos de notas
 análisis_modelo.txt
 main.py
+
+
+# archivos adicionales
+ejemplo_conexion.php
+principal.php 
+test_connection.php
+utils/css
+views/login_test.php
+views/register_test.php

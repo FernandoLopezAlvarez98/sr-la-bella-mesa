@@ -846,7 +846,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
 
     // 12. Preloader de imágenes
     function preloadImages() {
-      const images = ['/src/images/1.jpg', '/src/images/2.jpg', '/src/images/4.jpg', '/src/images/restaurante1.jpg', '/src/images/restaurante2.jpg', '/src/images/restaurante3.jpg'];
+      const images = ['/src/images/1.jpg', '/src/images/2.jpg', '/src/images/4.jpg', '/src/images/restaurante1.jpg', '/src/images/restaurante2.jpg', '/src/images/3.jpg'];
       let loadedImages = 0;
       
       images.forEach(imageSrc => {

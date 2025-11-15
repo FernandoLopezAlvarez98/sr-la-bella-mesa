@@ -196,6 +196,161 @@ class User
     }
 
     /**
+     * Obtener todos los clientes (usuarios con rol de cliente)
+     */
+    public function getAllClients()
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id_usuario, nombre, correo, telefono, fecha_registro 
+                FROM usuario 
+                WHERE rol = 2 
+                ORDER BY nombre ASC
+            ");
+            $stmt->execute();
+            
+            return $stmt->fetchAll();
+
+        } catch (PDOException $e) {
+            error_log("Error al obtener clientes: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener clientes con estadísticas de reservas
+     */
+    public function getClientsWithStats()
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT 
+                    u.id_usuario, 
+                    u.nombre, 
+                    u.correo, 
+                    u.telefono, 
+                    u.fecha_registro,
+                    COUNT(r.id_reservacion) as total_reservas,
+                    MAX(r.fecha_reserva) as ultima_reserva
+                FROM usuario u 
+                LEFT JOIN reservacion r ON u.id_usuario = r.id_usuario
+                WHERE u.rol = 2 
+                GROUP BY u.id_usuario, u.nombre, u.correo, u.telefono, u.fecha_registro
+                ORDER BY u.nombre ASC
+            ");
+            $stmt->execute();
+            
+            return $stmt->fetchAll();
+
+        } catch (PDOException $e) {
+            error_log("Error al obtener clientes con estadísticas: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Crear un nuevo cliente
+     */
+    public function createClient($data)
+    {
+        try {
+            // Verificar si el correo ya existe
+            if ($this->emailExists($data['correo'])) {
+                return ['success' => false, 'message' => 'El correo electrónico ya está registrado'];
+            }
+
+            // Generar UUID para el nuevo cliente
+            $id = $this->generateUUID();
+            
+            // Password temporal (se puede cambiar después)
+            $tempPassword = bin2hex(random_bytes(8)); // Password temporal de 16 caracteres
+            $hashedPassword = password_hash($tempPassword, PASSWORD_DEFAULT);
+            
+            $stmt = $this->connection->prepare("
+                INSERT INTO usuario (id_usuario, nombre, correo, telefono, password_hash, rol, fecha_registro) 
+                VALUES (?, ?, ?, ?, ?, 2, CURDATE())
+            ");
+            
+            $result = $stmt->execute([
+                $id,
+                $data['nombre'],
+                $data['correo'],
+                $data['telefono'],
+                $hashedPassword
+            ]);
+            
+            if ($result) {
+                return [
+                    'success' => true, 
+                    'message' => 'Cliente creado exitosamente',
+                    'id' => $id,
+                    'temp_password' => $tempPassword
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Error al crear el cliente'];
+            }
+
+        } catch (PDOException $e) {
+            error_log("Error al crear cliente: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error interno del servidor'];
+        }
+    }
+
+    /**
+     * Obtener estadísticas de clientes
+     */
+    public function getClientStats()
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT 
+                    COUNT(*) as total_clients,
+                    COUNT(CASE WHEN DATE(fecha_registro) >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) THEN 1 END) as new_clients_month,
+                    COUNT(CASE WHEN EXISTS(
+                        SELECT 1 FROM reservacion r 
+                        WHERE r.id_usuario = usuario.id_usuario 
+                        AND DATE(r.fecha_reserva) >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                    ) THEN 1 END) as active_clients,
+                    ROUND(AVG(reservas_count.total), 1) as avg_reservations
+                FROM usuario 
+                LEFT JOIN (
+                    SELECT id_usuario, COUNT(*) as total 
+                    FROM reservacion 
+                    GROUP BY id_usuario
+                ) reservas_count ON usuario.id_usuario = reservas_count.id_usuario
+                WHERE usuario.rol = 2
+            ");
+            $stmt->execute();
+            
+            return $stmt->fetch();
+
+        } catch (PDOException $e) {
+            error_log("Error al obtener estadísticas de clientes: " . $e->getMessage());
+            return [
+                'total_clients' => 0,
+                'new_clients_month' => 0,
+                'active_clients' => 0,
+                'avg_reservations' => 0
+            ];
+        }
+    }
+
+    /**
+     * Generar UUID para nuevos clientes
+     */
+    private function generateUUID()
+    {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
+    /**
      * Verifica si un correo ya está registrado
      */
     public function emailExists($correo)

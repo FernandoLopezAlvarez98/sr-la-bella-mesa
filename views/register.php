@@ -43,7 +43,7 @@ if ($_POST) {
   <!-- Hero Section -->
   <div class="hero">
     <video autoplay muted loop>
-      <source src="videos/fondo.mp4" type="video/mp4">
+      <source src="../videos/fondo.mp4" type="video/mp4">
       Tu navegador no soporta videos HTML5.
     </video>
     <div class="overlay"></div>
@@ -51,7 +51,7 @@ if ($_POST) {
     <!-- Barra de navegación -->
     <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container-fluid">
-        <a href="index.html" class="navbar-brand logo">
+        <a href="../index.php" class="navbar-brand logo">
           <i class="fas fa-utensils"></i> La Bella Mesa
         </a>
 
@@ -64,19 +64,19 @@ if ($_POST) {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
             <li class="nav-item">
-              <a class="nav-link active" href="pantalla principal.html"><i class="fas fa-home"></i> Inicio</a>
+              <a class="nav-link active" href="../index.php"><i class="fas fa-home"></i> Inicio</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="REGISTRAR/index.html"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
+              <a class="nav-link" href="#"><i class="fas fa-calendar-alt"></i> Reservaciones</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="Galery.html"><i class="fas fa-images"></i> Galería</a>
+              <a class="nav-link" href="#"><i class="fas fa-images"></i> Galería</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="inicio sesion.html"><i class="fas fa-sign-in-alt"></i> Acceso</a>
+              <a class="nav-link" href="login.php"><i class="fas fa-sign-in-alt"></i> Acceso</a>
             </li>
           </ul>
 
@@ -114,7 +114,7 @@ if ($_POST) {
               <i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?>
           </div>
       <?php endif; ?>
-      
+
       <?php if ($success): ?>
           <div class="alert alert-success">
               <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($success); ?>
@@ -199,7 +199,7 @@ if ($_POST) {
       <?php endif; ?>
 
       <div class="mt-3 text-center">
-        <a href="inicio sesion.html" class="text-white">¿Ya tienes cuenta? Iniciar sesión</a>
+        <a href="login.php" class="text-white">¿Ya tienes cuenta? Iniciar sesión</a>
       </div>
     </div>
   </div>
@@ -222,21 +222,21 @@ if ($_POST) {
       <div id="foodCarousel" class="carousel slide" data-bs-ride="carousel">
         <div class="carousel-inner">
           <div class="carousel-item active">
-            <img src="1.jpg" class="d-block w-100" alt="Plato gourmet con carne y vegetales">
+            <img src="../src/images/1.jpg" class="d-block w-100" alt="Plato gourmet con carne y vegetales">
             <div class="carousel-caption d-none d-md-block">
               <h5>Exquisitos platos gourmet</h5>
               <p>Preparados por chefs de renombre internacional</p>
             </div>
           </div>
           <div class="carousel-item">
-            <img src="2.jpg" class="d-block w-100" alt="Vista del restaurante con ambiente acogedor">
+            <img src="../src/images/2.jpg" class="d-block w-100" alt="Vista del restaurante con ambiente acogedor">
             <div class="carousel-caption d-none d-md-block">
               <h5>Ambiente acogedor</h5>
               <p>Un espacio diseñado para disfrutar al máximo</p>
             </div>
           </div>
           <div class="carousel-item">
-            <img src="4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
+            <img src="../src/images/4.gif" class="d-block w-100" alt="Postres elegantes y deliciosos">
             <div class="carousel-caption d-none d-md-block">
               <h5>Postres de ensueño</h5>
               <p>El broche perfecto para una experiencia culinaria inolvidable</p>
@@ -361,7 +361,7 @@ if ($_POST) {
       <div class="row">
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="1.2.jpg" class="card-img-top" alt="Restaurante 1">
+            <img src="../src/images/1.2.jpg" class="card-img-top" alt="Restaurante 1">
             <div class="card-body">
               <h5 class="card-title">Restaurante Gourmet</h5>
               <p class="card-text">Especializado en cocina internacional con ingredientes premium.</p>
@@ -370,7 +370,7 @@ if ($_POST) {
         </div>
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="2.2.jpg" class="card-img-top" alt="Restaurante 2">
+            <img src="../src/images/2.2.jpg" class="card-img-top" alt="Restaurante 2">
             <div class="card-body">
               <h5 class="card-title">La Cocina Mexicana</h5>
               <p class="card-text">Auténticos sabores mexicanos con un toque moderno.</p>
@@ -379,7 +379,7 @@ if ($_POST) {
         </div>
         <div class="col-md-4 mb-3">
           <div class="card">
-            <img src="3.2.jpg" class="card-img-top" alt="Restaurante 3">
+            <img src="../src/images/3.2.jpg" class="card-img-top" alt="Restaurante 3">
             <div class="card-body">
               <h5 class="card-title">Postres Deliciosos</h5>
               <p class="card-text">Variedad de postres caseros y exclusivos para endulzar tu día.</p>
@@ -966,7 +966,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
 
     // 12. Preloader de imágenes
     function preloadImages() {
-      const images = ['1.jpg', '2.jpg', '4.jpg', 'restaurante1.jpg', 'restaurante2.jpg', 'restaurante3.jpg'];
+      const images = ['../src/images/1.jpg', '../src/images/2.jpg', '../src/images/4.gif', '../src/images/1.2.jpg', '../src/images/2.2.jpg', '../src/images/3.2.jpg'];
       let loadedImages = 0;
       
       images.forEach(imageSrc => {
