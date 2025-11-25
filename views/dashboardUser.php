@@ -984,9 +984,9 @@ $categorias = [
                                     </div>
                                 </div>
                                 <a href="userProfile.php"><i class="fas fa-user"></i> Mi Perfil</a>
-                                <a href="#"><i class="fas fa-calendar-check"></i> Mis Reservaciones</a>
+                                <a href="userReservation.php"><i class="fas fa-calendar-check"></i> Mis Reservaciones</a>
                                 <a href="#"><i class="fas fa-heart"></i> Favoritos</a>
-                                <a href="#"><i class="fas fa-history"></i> Historial</a>
+                                <a href="userReservation.php"><i class="fas fa-history"></i> Historial</a>
                                 <a href="#"><i class="fas fa-cog"></i> Configuración</a>
                                 <a href="login.php?logout=1" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                             </div>
@@ -1228,7 +1228,7 @@ $categorias = [
                 <i class="fas fa-search"></i>
                 <span>Buscar</span>
             </a>
-            <a href="#" class="mobile-nav-item">
+            <a href="userReservation.php" class="mobile-nav-item">
                 <i class="fas fa-calendar-check"></i>
                 <span>Reservas</span>
             </a>
@@ -1272,6 +1272,7 @@ $categorias = [
                             <hr>
                             <h5>Hacer Reservación</h5>
                             <form id="quickReserveForm">
+                                <input type="hidden" id="reserveRestaurantId" value="">
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Fecha</label>
@@ -1376,6 +1377,9 @@ $categorias = [
             const restaurant = restaurantesData.find(r => r.id === restaurantId);
             if (!restaurant) return;
 
+            // Guardar el ID del restaurante en el formulario
+            document.getElementById('reserveRestaurantId').value = restaurantId;
+            
             document.getElementById('restaurantModalTitle').innerHTML = `<i class="fas fa-utensils me-2"></i>${restaurant.nombre}`;
             document.getElementById('restaurantModalImg').src = restaurant.imagen;
             document.getElementById('restaurantModalName').textContent = restaurant.nombre;
@@ -1397,13 +1401,18 @@ $categorias = [
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('reserveDate').min = today;
             document.getElementById('reserveDate').value = today;
+            
+            // Resetear el formulario
+            document.getElementById('reserveTime').value = '';
+            document.getElementById('reservePeople').value = '';
 
             const modal = new bootstrap.Modal(document.getElementById('restaurantDetailModal'));
             modal.show();
         }
 
         // Hacer reservación
-        function makeReservation() {
+        async function makeReservation() {
+            const restaurantId = document.getElementById('reserveRestaurantId').value;
             const date = document.getElementById('reserveDate').value;
             const time = document.getElementById('reserveTime').value;
             const people = document.getElementById('reservePeople').value;
@@ -1412,13 +1421,56 @@ $categorias = [
                 showNotification('Por favor completa todos los campos', 'error');
                 return;
             }
-
-            // Aquí iría la lógica para enviar la reservación al servidor
-            showNotification('¡Reservación realizada exitosamente!', 'success');
             
-            setTimeout(() => {
-                bootstrap.Modal.getInstance(document.getElementById('restaurantDetailModal')).hide();
-            }, 1500);
+            if (!restaurantId) {
+                showNotification('Error: No se ha seleccionado un restaurante', 'error');
+                return;
+            }
+
+            // Deshabilitar el botón mientras se procesa
+            const submitBtn = document.querySelector('#restaurantDetailModal .btn-danger');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'create');
+                formData.append('restaurant_id', restaurantId);
+                formData.append('date', date);
+                formData.append('time', time);
+                formData.append('people', people);
+
+                const response = await fetch('../controllers/ReservationController.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    
+                    // Mostrar detalles de la reservación
+                    setTimeout(() => {
+                        showNotification(`Mesa ${result.data.table_number} reservada para ${result.data.people} persona(s)`, 'info');
+                    }, 1500);
+                    
+                    // Cerrar el modal
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('restaurantDetailModal')).hide();
+                    }, 2000);
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error de conexión. Por favor intenta nuevamente.', 'error');
+            } finally {
+                // Restaurar el botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
 
         // Cargar más restaurantes

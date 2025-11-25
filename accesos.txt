@@ -1,0 +1,11 @@
+Usuario estandar                    Contraseña
+fernando.perez@gmail.com            Americas03
+
+
+Administrador Restaurante
+lfer7093@gmail.com                  Americas03
+
+
+
+Administrador del sistema
+admin@labellamesa.com               admin123

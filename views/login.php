@@ -4,10 +4,22 @@ require_once '../controllers/AuthController.php';
 $authController = new AuthController();
 $error = '';
 
+// Manejar logout
+if (isset($_GET['logout'])) {
+    $authController->logout();
+    header('Location: login.php');
+    exit;
+}
+
 if ($_POST) {
     $result = $authController->login($_POST['email'], $_POST['password']);
     if ($result['success']) {
-        header('Location: dashboard_admin.php');
+        // Redirigir según el rol del usuario
+        if ($result['rol'] == 1) {
+            header('Location: dashboard_admin.php'); // Admin/Restaurante
+        } else {
+            header('Location: dashboardUser.php'); // Usuario normal
+        }
         exit;
     } else {
         $error = $result['message'];
@@ -34,7 +46,7 @@ if ($_POST) {
   </div>
 
   <!-- Hero Section -->
-  <div class="hero">
+  <div class="hero" style="background-image: url('/src/images/1.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
     <video autoplay muted loop>
       <source src="../videos/fondo.mp4" type="video/mp4">
       Tu navegador no soporta videos HTML5.

@@ -31,7 +31,7 @@ if ($_POST) {
   <!-- CSS Files -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="style_animation.css">
+  <link rel="stylesheet" href="../src/css/style_animation.css">
   
 </head>
 <body>
@@ -41,11 +41,7 @@ if ($_POST) {
   </div>
 
   <!-- Hero Section -->
-  <div class="hero">
-    <video autoplay muted loop>
-      <source src="../videos/fondo.mp4" type="video/mp4">
-      Tu navegador no soporta videos HTML5.
-    </video>
+  <div class="hero" style="background-image: url('/src/images/1.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
     <div class="overlay"></div>
     
     <!-- Barra de navegación -->
@@ -75,9 +71,6 @@ if ($_POST) {
             <li class="nav-item">
               <a class="nav-link" href="#about"><i class="fas fa-info-circle"></i> Acerca de La Bella Mesa</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link" href="login.php"><i class="fas fa-sign-in-alt"></i> Acceso</a>
-            </li>
           </ul>
 
           <!-- Buscador a la derecha -->
@@ -101,9 +94,9 @@ if ($_POST) {
     
     <!-- Main Content -->
     <div class="content text-center text-white">
-     <!-- Contenedor Principal -->
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="bg-dark text-white p-5 rounded shadow-lg" style="max-width: 450px; width: 100%; ;">
+    <!-- Contenedor Principal -->
+<div class="container d-flex justify-content-center align-items-center min-vh-150">
+    <div class="bg-dark text-white p-5 rounded shadow-lg" style="max-width: 600px; width: 100%; ;">
     <div class="card-body text-center text-white">
       <h2 class="card-title mb-3">Crear Cuenta</h2>
       <p class="card-text mb-4">Regístrate para acceder al sistema de reservas.</p>

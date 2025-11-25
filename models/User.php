@@ -78,7 +78,7 @@ class User
                 $correo,
                 $telefono,
                 $passwordHash,
-                1, // Rol Cliente por defecto
+                2, // Rol 2 = Usuario normal por defecto
                 date('Y-m-d')
             ]);
 
@@ -110,6 +110,60 @@ class User
     public function verifyPassword($inputPassword, $hashedPassword)
     {
         return password_verify($inputPassword, $hashedPassword);
+    }
+
+    /**
+     * Actualiza el perfil del usuario (nombre y teléfono)
+     */
+    public function updateUserProfile($userId, $nombre, $telefono)
+    {
+        try {
+            $stmt = $this->connection->prepare("UPDATE usuario SET nombre = ?, telefono = ? WHERE id_usuario = ?");
+            $result = $stmt->execute([$nombre, $telefono, $userId]);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Perfil actualizado exitosamente.' : 'Error al actualizar el perfil.'
+            ];
+
+        } catch (PDOException $e) {
+            error_log("Error al actualizar perfil: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error interno del servidor.'
+            ];
+        }
+    }
+
+    /**
+     * Actualiza el correo electrónico del usuario
+     */
+    public function updateUserEmail($userId, $newEmail)
+    {
+        try {
+            // Verificar si el nuevo correo ya existe
+            if ($this->emailExists($newEmail)) {
+                return [
+                    'success' => false,
+                    'message' => 'Este correo electrónico ya está registrado.'
+                ];
+            }
+
+            $stmt = $this->connection->prepare("UPDATE usuario SET correo = ? WHERE id_usuario = ?");
+            $result = $stmt->execute([$newEmail, $userId]);
+
+            return [
+                'success' => $result,
+                'message' => $result ? 'Correo actualizado exitosamente.' : 'Error al actualizar el correo.'
+            ];
+
+        } catch (PDOException $e) {
+            error_log("Error al actualizar correo: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error interno del servidor.'
+            ];
+        }
     }
 
     /**

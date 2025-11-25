@@ -10,6 +10,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
 
 # Archivos de configuración de IDEs
 .vscode/
@@ -63,3 +64,7 @@ test_connection.php
 utils/css
 views/login_test.php
 views/register_test.php
+insert_sample_data.php
+insert_mesas.sql
+insert_restaurantes.sql
+test_reservations.php

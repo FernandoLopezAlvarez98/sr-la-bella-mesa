@@ -55,12 +55,12 @@
         <form class="d-flex ms-lg-3 mt-2 mt-lg-0" role="search" style="position: relative;">
           <label for="buscador" class="visually-hidden">Buscar restaurante</label>
           <input id="buscador"
-                 class="form-control me-2 flex-grow-1"
-                 type="search"
-                 placeholder="Buscar por ubicación (ej. ciudad, barrio)"
-                 aria-label="Buscar"
-                 style="max-width: 300px;"
-                 autocomplete="off">
+                class="form-control me-2 flex-grow-1"
+                type="search"
+                placeholder="Buscar por ubicación (ej. ciudad, barrio)"
+                aria-label="Buscar"
+                style="max-width: 300px;"
+                autocomplete="off">
           <div class="search-suggestions" id="searchSuggestions"></div>
           <button class="btn btn-primary" type="submit">
             <i class="fas fa-search"></i>
@@ -71,7 +71,7 @@
   </nav>
 
   <!-- Hero Section -->
-  <div class="hero d-flex flex-column justify-content-center align-items-center text-center text-white">
+  <div class="hero d-flex flex-column justify-content-center align-items-center text-center text-white" style="background-image: url('/src/images/1.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
     <!-- Main Content -->
     <div class="content text-center text-white">
       <h1>La Bella Mesa</h1>
@@ -333,10 +333,10 @@
         <form id="newsletterForm">
           <div class="input-group">
             <input type="email" 
-                   class="form-control" 
-                   placeholder="Tu correo electrónico" 
-                   required
-                   id="newsletterEmail">
+                  class="form-control" 
+                  placeholder="Tu correo electrónico" 
+                  required
+                  id="newsletterEmail">
             <button class="btn btn-warning" type="submit">
               <i class="fas fa-paper-plane"></i> Suscribirse
             </button>
@@ -347,7 +347,7 @@
   </section>
   
   <!-- NUEVA SECCIÓN: Información de Contacto y Horarios -->
-  <section class="contact-info py-5 fade-in">
+  <!-- <section class="contact-info py-5 fade-in">
     <div class="container">
       <div class="row">
         <div class="col-md-6 mb-4">
@@ -382,7 +382,7 @@
         </div>
       </div>
     </div>
-  </section>
+  </section> -->
 
   
   <!-- Footer -->
@@ -526,7 +526,9 @@
       'San Ángel',
       'Zona Rosa',
       'Del Valle',
-      'Narvarte'
+      'Narvarte',
+      'Centro',
+
     ];
 
     searchInput.addEventListener('input', function() {

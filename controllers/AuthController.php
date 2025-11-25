@@ -45,12 +45,13 @@ class AuthController
             $user = $this->validateCredentials($email, $password);
             
             if ($user) {
-                // Iniciar sesión
-                $this->startSession($user['id_usuario'], $user['correo']);
+                // Iniciar sesión con el rol del usuario
+                $this->startSession($user['id_usuario'], $user['correo'], $user['rol']);
                 
                 return [
                     'success' => true,
-                    'message' => 'Login exitoso.'
+                    'message' => 'Login exitoso.',
+                    'rol' => $user['rol']
                 ];
             } else {
                 return [
@@ -91,10 +92,11 @@ class AuthController
     /**
      * Inicia la sesión del usuario
      */
-    public function startSession($userId, $email)
+    public function startSession($userId, $email, $rol = 2)
     {
         $_SESSION['user_id'] = $userId;
         $_SESSION['user_email'] = $email;
+        $_SESSION['user_role'] = $rol;
         $_SESSION['logged_in'] = true;
         $_SESSION['login_time'] = time();
         

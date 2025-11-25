@@ -1,7 +1,11 @@
 <?php
 require_once '../controllers/AuthController.php';
+require_once '../models/Reservation.php';
+require_once '../models/User.php';
 
 $authController = new AuthController();
+$reservationModel = new Reservation();
+$userModel = new User();
 
 // Verificar si el usuario está autenticado
 if (!$authController->isAuthenticated()) {
@@ -19,6 +23,63 @@ if (isset($_GET['logout'])) {
     $authController->logout();
     header('Location: login.php');
     exit;
+}
+
+// Obtener reservas del día
+try {
+    $todayReservations = $reservationModel->getTodayReservations();
+} catch (Exception $e) {
+    $todayReservations = [];
+    error_log("Error al obtener reservas del día: " . $e->getMessage());
+}
+
+// Obtener reservas futuras
+try {
+    $futureReservations = $reservationModel->getFutureReservations();
+} catch (Exception $e) {
+    $futureReservations = [];
+    error_log("Error al obtener reservas futuras: " . $e->getMessage());
+}
+
+// Obtener todas las reservas para filtrado
+try {
+    $allReservations = $reservationModel->getAllReservations();
+} catch (Exception $e) {
+    $allReservations = [];
+    error_log("Error al obtener todas las reservas: " . $e->getMessage());
+}
+
+// Obtener clientes con estadísticas
+try {
+    $clientsWithStats = $userModel->getClientsWithStats();
+} catch (Exception $e) {
+    $clientsWithStats = [];
+    error_log("Error al obtener clientes: " . $e->getMessage());
+}
+
+// Función para obtener la clase CSS del estado
+function getStatusClass($estado) {
+    switch (strtolower($estado)) {
+        case 'confirmada':
+        case 'confirmed':
+            return 'status-confirmed';
+        case 'checkin':
+        case 'check-in':
+            return 'status-checkin';
+        case 'cancelada':
+        case 'cancelled':
+            return 'status-cancelled';
+        case 'noshow':
+        case 'no-show':
+            return 'status-noshow';
+        case 'completada':
+        case 'completed':
+            return 'status-completed';
+        case 'pendiente':
+        case 'pending':
+        default:
+            return 'status-pending';
+    }
 }
 ?>
 
@@ -175,6 +236,75 @@ if (isset($_GET['logout'])) {
         
         .alert {
             margin-bottom: 0;
+        }
+        
+        /* Estilos para filtros de reservas */
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-controls .form-control {
+            min-width: 150px;
+            max-width: 200px;
+        }
+        
+        .filter-info {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .section-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* Estilos para tabla ordenable */
+        .table th {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            background-color: #f8f9fa;
+        }
+        
+        .table th:hover {
+            background-color: #e9ecef;
+        }
+        
+        .table th i {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+        
+        .table th i.fa-sort-up,
+        .table th i.fa-sort-down {
+            opacity: 1;
+            color: #007bff;
+        }
+        
+        /* Responsive para filtros */
+        @media (max-width: 768px) {
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-controls .form-control {
+                min-width: auto;
+                max-width: none;
+                width: 100%;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
         }
     </style>
 </head>
@@ -423,76 +553,63 @@ if (isset($_GET['logout'])) {
                             </tr>
                         </thead>
                         <tbody id="today-reservations">
-                            <tr data-reservation-id="R-1234">
-                                <td data-time="12:30">12:30</td>
-                                <td data-customer="María González">
-                                    <div class="user-info">
-                                        <img src="277591295863fc51586860f820966128.jpg" alt="" class="user-avatar-sm">
-                                        <div>
-                                            <div class="user-name">María González</div>
-                                            <div class="user-email">maria@example.com</div>
+                            <?php if (empty($todayReservations)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                                            <p>No hay reservas para hoy</p>
                                         </div>
-                                    </div>
-                                </td>
-                                <td data-people="4"><span class="people-count">4</span></td>
-                                <td data-table="T5 (Terraza)"><span class="badge bg-info">T5 (Terraza)</span></td>
-                                <td data-status="Confirmada"><span class="status status-confirmed">Confirmada</span></td>
-                                <td class="actions">
-                                    <div class="btn-group">
-                                        <button class="btn btn-success btn-action" title="Check-in" data-action="checkin" data-id="R-1234">
-                                            <i class="fas fa-check" aria-hidden="true"></i>
-                                            <span class="sr-only">Check-in</span>
-                                        </button>
-                                        <button class="btn btn-info btn-action" title="Ver Detalles" data-action="view" data-id="R-1234">
-                                            <i class="fas fa-eye" aria-hidden="true"></i>
-                                            <span class="sr-only">Ver Detalles</span>
-                                        </button>
-                                        <button class="btn btn-warning btn-action" title="Editar" data-action="edit" data-id="R-1234">
-                                            <i class="fas fa-edit" aria-hidden="true"></i>
-                                            <span class="sr-only">Editar</span>
-                                        </button>
-                                        <button class="btn btn-danger btn-action" title="Cancelar" data-action="cancel" data-id="R-1234">
-                                            <i class="fas fa-times" aria-hidden="true"></i>
-                                            <span class="sr-only">Cancelar</span>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-reservation-id="R-1235">
-                                <td data-time="13:00">13:00</td>
-                                <td data-customer="Carlos Rodríguez">
-                                    <div class="user-info">
-                                        <img src="277591295863fc51586860f820966128.jpg" alt="" class="user-avatar-sm">
-                                        <div>
-                                            <div class="user-name">Carlos Rodríguez</div>
-                                            <div class="user-email">carlos@example.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td data-people="2"><span class="people-count">2</span></td>
-                                <td data-table="I3 (Interior)"><span class="badge bg-secondary">I3 (Interior)</span></td>
-                                <td data-status="Confirmada"><span class="status status-confirmed">Confirmada</span></td>
-                                <td class="actions">
-                                    <div class="btn-group">
-                                        <button class="btn btn-success btn-action" title="Check-in" data-action="checkin" data-id="R-1236">
-                                            <i class="fas fa-check" aria-hidden="true"></i>
-                                            <span class="sr-only">Check-in</span>
-                                        </button>
-                                        <button class="btn btn-info btn-action" title="Ver Detalles " data-action="view" data-id="R-1236">
-                                            <i class="fas fa-eye" aria-hidden="true"></i>
-                                            <span class="sr-only">Ver Detalles </span>
-                                        </button>
-                                        <button class="btn btn-warning btn-action" title="Editar" data-action="edit" data-id="R-1236">
-                                            <i class="fas fa-edit" aria-hidden="true"></i>
-                                            <span class="sr-only">Editar</span>
-                                        </button>
-                                        <button class="btn btn-danger btn-action" title="Cancelar" data-action="cancel" data-id="R-1236">
-                                            <i class="fas fa-times" aria-hidden="true"></i>
-                                            <span class="sr-only">Cancelar</span>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($todayReservations as $reservation): ?>
+                                    <?php
+                                    // Formatear hora
+                                    $hora_formateada = date('H:i', strtotime($reservation['hora_reserva']));
+                                    $estado_formateado = ucfirst($reservation['estado']);
+                                    ?>
+                                    <tr data-reservation-id="<?php echo htmlspecialchars($reservation['id_reservacion']); ?>">
+                                        <td data-time="<?php echo $hora_formateada; ?>"><?php echo $hora_formateada; ?></td>
+                                        <td data-customer="<?php echo htmlspecialchars($reservation['cliente_nombre']); ?>">
+                                            <div class="user-info">
+                                                <img src="277591295863fc51586860f820966128.jpg" alt="" class="user-avatar-sm">
+                                                <div>
+                                                    <div class="user-name"><?php echo htmlspecialchars($reservation['cliente_nombre']); ?></div>
+                                                    <div class="user-email"><?php echo htmlspecialchars($reservation['cliente_email'] ?? 'Sin email'); ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-people="<?php echo $reservation['num_personas']; ?>"><span class="people-count"><?php echo $reservation['num_personas']; ?></span></td>
+                                        <td data-table="Mesa <?php echo $reservation['mesa_numero']; ?>"><span class="badge bg-info">Mesa <?php echo $reservation['mesa_numero']; ?></span></td>
+                                        <td data-status="<?php echo $estado_formateado; ?>"><span class="status <?php echo getStatusClass($reservation['estado']); ?>"><?php echo $estado_formateado; ?></span></td>
+                                        <td class="actions">
+                                            <div class="btn-group">
+                                                <button class="btn btn-success btn-action" title="Check-in" onclick="updateReservationStatus('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>', 'check_in')">
+                                                    <i class="fas fa-check" aria-hidden="true"></i>
+                                                    <span class="sr-only">Check-in</span>
+                                                </button>
+                                                <button class="btn btn-info btn-action" title="Ver Detalles" onclick="viewReservationDetails('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                                    <span class="sr-only">Ver Detalles</span>
+                                                </button>
+                                                <button class="btn btn-warning btn-action" title="Editar" onclick="editReservation('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                                    <span class="sr-only">Editar</span>
+                                                </button>
+                                                <button class="btn btn-secondary btn-action" title="Cancelar Reserva" onclick="updateReservationStatus('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>', 'cancelada')">
+                                                    <i class="fas fa-ban" aria-hidden="true"></i>
+                                                    <span class="sr-only">Cancelar</span>
+                                                </button>
+                                                <button class="btn btn-danger btn-action" title="Eliminar Reserva" onclick="confirmDeleteReservation('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                    <span class="sr-only">Eliminar</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -517,6 +634,144 @@ if (isset($_GET['logout'])) {
                     <button class="btn btn-sm">
                         Siguiente <i class="fas fa-chevron-right"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Reservas Futuras y Filtros -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Todas las Reservas</h2>
+                    <div class="section-actions">
+                        <div class="filter-controls">
+                            <select id="filter-period" class="form-control me-2" onchange="filterReservations()">
+                                <option value="today">Solo hoy</option>
+                                <option value="all">Todas las fechas</option>
+                                <option value="tomorrow">Mañana</option>
+                                <option value="this-week">Esta semana</option>
+                                <option value="next-week">Próxima semana</option>
+                                <option value="future">Futuras</option>
+                                <option value="custom">Rango personalizado</option>
+                            </select>
+                            <select id="filter-status" class="form-control me-2" onchange="filterReservations()">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="confirmada">Confirmada</option>
+                                <option value="checkin">Check-in</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Cancelada</option>
+                                <option value="noshow">No Show</option>
+                            </select>
+                            <input type="text" id="filter-search" class="form-control me-2" placeholder="Buscar cliente..." oninput="filterReservations()">
+                            <button class="btn btn-secondary" onclick="clearFilters()">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rango personalizado de fechas -->
+                <div id="custom-date-range" class="mb-3" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="date-from">Fecha desde:</label>
+                            <input type="date" id="date-from" class="form-control" onchange="filterReservations()">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="date-to">Fecha hasta:</label>
+                            <input type="date" id="date-to" class="form-control" onchange="filterReservations()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de todas las reservas -->
+                <div class="table-container">
+                    <table class="table table-hover" id="all-reservations-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0)">ID <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(1)">Fecha <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(2)">Hora <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(3)">Cliente <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(4)">Mesa <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(5)">Personas <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(6)">Estado <i class="fas fa-sort"></i></th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-reservations-body">
+                            <?php if (empty($allReservations)): ?>
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <div class="empty-state">
+                                            <i class="fas fa-calendar-times fa-3x text-muted"></i>
+                                            <p>No hay reservas encontradas</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($allReservations as $reservation): ?>
+                                    <?php
+                                    $estado_formateado = ucfirst(strtolower($reservation['estado']));
+                                    if ($estado_formateado == 'Check_in') $estado_formateado = 'Check-in';
+                                    if ($estado_formateado == 'Noshow') $estado_formateado = 'No Show';
+                                    ?>
+                                    <tr data-reservation-id="<?php echo htmlspecialchars($reservation['id_reservacion']); ?>">
+                                        <td data-reservation-id="<?php echo htmlspecialchars($reservation['id_reservacion']); ?>">
+                                            <?php echo htmlspecialchars(substr($reservation['id_reservacion'], 0, 8)); ?>
+                                        </td>
+                                        <td data-date="<?php echo $reservation['fecha_reserva']; ?>">
+                                            <?php echo date('d/m/Y', strtotime($reservation['fecha_reserva'])); ?>
+                                        </td>
+                                        <td data-time="<?php echo $reservation['hora_reserva']; ?>">
+                                            <?php echo date('H:i', strtotime($reservation['hora_reserva'])); ?>
+                                        </td>
+                                        <td data-client="<?php echo strtolower($reservation['cliente_nombre']); ?>">
+                                            <div class="user-info">
+                                                <div>
+                                                    <div class="user-name"><?php echo htmlspecialchars($reservation['cliente_nombre']); ?></div>
+                                                    <div class="user-email"><?php echo htmlspecialchars($reservation['cliente_email']); ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-table="<?php echo $reservation['mesa_numero']; ?>">Mesa <?php echo $reservation['mesa_numero']; ?></td>
+                                        <td data-people="<?php echo $reservation['num_personas']; ?>"><?php echo $reservation['num_personas']; ?></td>
+                                        <td data-status="<?php echo $estado_formateado; ?>">
+                                            <span class="status <?php echo getStatusClass($reservation['estado']); ?>">
+                                                <?php echo $estado_formateado; ?>
+                                            </span>
+                                        </td>
+                                        <td class="actions">
+                                            <div class="btn-group">
+                                                <button class="btn btn-success btn-action" title="Check-in" onclick="updateReservationStatus('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>', 'check_in')">
+                                                    <i class="fas fa-check" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-info btn-action" title="Ver Detalles" onclick="viewReservationDetails('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-warning btn-action" title="Editar" onclick="editReservation('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-secondary btn-action" title="Cancelar Reserva" onclick="updateReservationStatus('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>', 'cancelada')">
+                                                    <i class="fas fa-ban" aria-hidden="true"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-action" title="Eliminar Reserva" onclick="confirmDeleteReservation('<?php echo htmlspecialchars($reservation['id_reservacion']); ?>')">
+                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Información de filtrado -->
+                <div class="filter-info mt-3">
+                    <span id="reservations-count">
+                        Mostrando <?php echo count($allReservations); ?> reservas
+                    </span>
+                    <span id="filter-summary" class="text-muted ms-3"></span>
                 </div>
             </div>
 
@@ -976,6 +1231,147 @@ if (isset($_GET['logout'])) {
     </div>
 </div>
 
+<!-- Modal para Editar Reserva -->
+<div class="modal fade" id="editReservationModal" tabindex="-1" aria-labelledby="editReservationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editReservationModalLabel">
+                    <i class="fas fa-edit me-2"></i>Editar Reserva
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editReservationForm">
+                    <input type="hidden" id="editReservationId" name="reservation_id">
+                    
+                    <div class="row">
+                        <!-- Información del Cliente -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3"><i class="fas fa-user me-2"></i>Información del Cliente</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Cliente</label>
+                                <div class="form-control bg-light" id="editClientInfo">
+                                    <!-- Se llenará dinámicamente -->
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editNumPeople" class="form-label">Número de Personas *</label>
+                                <select class="form-select" id="editNumPeople" name="people" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="1">1 persona</option>
+                                    <option value="2">2 personas</option>
+                                    <option value="3">3 personas</option>
+                                    <option value="4">4 personas</option>
+                                    <option value="5">5 personas</option>
+                                    <option value="6">6 personas</option>
+                                    <option value="7">7 personas</option>
+                                    <option value="8">8 personas</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editStatus" class="form-label">Estado</label>
+                                <select class="form-select" id="editStatus" name="status">
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="confirmada">Confirmada</option>
+                                    <option value="check_in">Check-in</option>
+                                    <option value="completada">Completada</option>
+                                    <option value="cancelada">Cancelada</option>
+                                    <option value="noshow">No Show</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de la Reserva -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3"><i class="fas fa-calendar-alt me-2"></i>Información de la Reserva</h6>
+                            
+                            <div class="mb-3">
+                                <label for="editReservationDate" class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" id="editReservationDate" name="date" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="editReservationTime" class="form-label">Hora *</label>
+                                <select class="form-select" id="editReservationTime" name="time" required>
+                                    <option value="">Seleccionar hora...</option>
+                                    <option value="12:00">12:00</option>
+                                    <option value="12:30">12:30</option>
+                                    <option value="13:00">13:00</option>
+                                    <option value="13:30">13:30</option>
+                                    <option value="14:00">14:00</option>
+                                    <option value="14:30">14:30</option>
+                                    <option value="15:00">15:00</option>
+                                    <option value="15:30">15:30</option>
+                                    <option value="16:00">16:00</option>
+                                    <option value="16:30">16:30</option>
+                                    <option value="17:00">17:00</option>
+                                    <option value="17:30">17:30</option>
+                                    <option value="18:00">18:00</option>
+                                    <option value="18:30">18:30</option>
+                                    <option value="19:00">19:00</option>
+                                    <option value="19:30">19:30</option>
+                                    <option value="20:00">20:00</option>
+                                    <option value="20:30">20:30</option>
+                                    <option value="21:00">21:00</option>
+                                    <option value="21:30">21:30</option>
+                                    <option value="22:00">22:00</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selección de Mesa -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3"><i class="fas fa-chair me-2"></i>Mesa Asignada</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Mesa Actual</label>
+                                <div class="form-control bg-light" id="editCurrentTable">
+                                    <!-- Se llenará dinámicamente -->
+                                </div>
+                                <!-- Campo hidden para almacenar el ID de la mesa (siempre disponible) -->
+                                <input type="hidden" id="editSelectedTable" name="table_id">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-primary" id="editSearchTablesBtn">
+                                    <i class="fas fa-search me-2"></i>Buscar Mesas Disponibles
+                                </button>
+                            </div>
+                            
+                            <div id="editAvailableTablesContainer" class="d-none">
+                                <label class="form-label">Mesas Disponibles</label>
+                                <div id="editAvailableTablesList" class="row">
+                                    <!-- Las mesas se cargarán aquí dinámicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mensaje de estado -->
+                    <div id="editReservationMessage" class="alert d-none" role="alert"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-danger me-2" id="deleteReservationBtn">
+                    <i class="fas fa-trash me-2"></i>Eliminar
+                </button>
+                <button type="button" class="btn btn-primary" id="updateReservationBtn">
+                    <i class="fas fa-save me-2"></i>Actualizar Reserva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript para cargar datos dinámicos -->
 <script>
 // Actualizar datos cada 5 minutos
@@ -985,6 +1381,35 @@ setInterval(function() {
     loadTimeSlots();
     loadTablesStatus();
 }, 300000); // 5 minutos
+
+// Función para refrescar todo el dashboard
+function refreshDashboard() {
+    console.log('Actualizando dashboard...');
+    
+    // Mostrar indicador de carga
+    showNotification('Actualizando datos...', 'info');
+    
+    // Recargar todas las estadísticas y datos
+    loadTodayStats();
+    loadTodayReservations();
+    loadTimeSlots();
+    loadTablesStatus();
+    
+    // Actualizar fecha actual
+    updateCurrentDate();
+    
+    showNotification('Dashboard actualizado', 'success');
+}
+
+// Actualizar fecha actual en el header del panel de control
+function updateCurrentDate() {
+    const dateElement = document.getElementById('current-date');
+    if (dateElement) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const today = new Date().toLocaleDateString('es-ES', options);
+        dateElement.textContent = '- ' + today.charAt(0).toUpperCase() + today.slice(1);
+    }
+}
 
 // Cargar estadísticas del día
 function loadTodayStats() {
@@ -1082,30 +1507,51 @@ function updateReservationsTable(reservations) {
 function generateActionButtons(reservation) {
     let buttons = '';
     
-    if (reservation.estado === 'confirmada') {
+    // Botón de completar (palomita verde) - para reservas confirmadas o en check-in
+    if (reservation.estado === 'confirmada' || reservation.estado === 'check_in') {
         buttons += `
-            <button class="btn btn-success btn-action" title="Check-in" onclick="updateReservationStatus('${reservation.id_reservacion}', 'check_in')">
-                <i class="fas fa-check"></i>
+            <button class="btn btn-success btn-action" title="Marcar como Completada" onclick="updateReservationStatus('${reservation.id_reservacion}', 'completada')">
+                <i class="fas fa-check" aria-hidden="true"></i>
+                <span class="sr-only">Completar</span>
             </button>
         `;
     }
     
+    // Botón de ver detalles (ojo) - siempre disponible
     buttons += `
         <button class="btn btn-info btn-action" title="Ver Detalles" onclick="viewReservationDetails('${reservation.id_reservacion}')">
-            <i class="fas fa-eye"></i>
-        </button>
-        <button class="btn btn-warning btn-action" title="Editar" onclick="editReservation('${reservation.id_reservacion}')">
-            <i class="fas fa-edit"></i>
+            <i class="fas fa-eye" aria-hidden="true"></i>
+            <span class="sr-only">Ver Detalles</span>
         </button>
     `;
     
-    if (reservation.estado !== 'cancelada') {
+    // Botón de editar - solo para reservas no completadas ni canceladas
+    if (reservation.estado !== 'completada' && reservation.estado !== 'cancelada') {
         buttons += `
-            <button class="btn btn-danger btn-action" title="Cancelar" onclick="updateReservationStatus('${reservation.id_reservacion}', 'cancelada')">
-                <i class="fas fa-times"></i>
+            <button class="btn btn-warning btn-action" title="Editar" onclick="editReservation('${reservation.id_reservacion}')">
+                <i class="fas fa-edit" aria-hidden="true"></i>
+                <span class="sr-only">Editar</span>
             </button>
         `;
     }
+    
+    // Botón de cancelar - solo para reservas no completadas ni canceladas
+    if (reservation.estado !== 'completada' && reservation.estado !== 'cancelada') {
+        buttons += `
+            <button class="btn btn-secondary btn-action" title="Cancelar Reserva" onclick="updateReservationStatus('${reservation.id_reservacion}', 'cancelada')">
+                <i class="fas fa-ban" aria-hidden="true"></i>
+                <span class="sr-only">Cancelar</span>
+            </button>
+        `;
+    }
+    
+    // Botón de eliminar - siempre disponible (solo para administradores)
+    buttons += `
+        <button class="btn btn-danger btn-action" title="Eliminar Reserva" onclick="confirmDeleteReservation('${reservation.id_reservacion}')">
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            <span class="sr-only">Eliminar</span>
+        </button>
+    `;
     
     return buttons;
 }
@@ -1136,30 +1582,189 @@ function getStatusText(status) {
 
 // Actualizar estado de reservación
 function updateReservationStatus(reservationId, newStatus) {
+    // Si es cancelación, mostrar modal de confirmación especial
+    if (newStatus === 'cancelada') {
+        confirmCancelReservation(reservationId);
+        return;
+    }
+    
+    // Para otros estados, usar confirmación simple
+    const statusMessages = {
+        'completada': '¿Marcar esta reserva como completada?',
+        'check_in': '¿Hacer check-in de esta reserva?',
+        'confirmada': '¿Confirmar esta reserva?'
+    };
+    
+    const message = statusMessages[newStatus] || '¿Actualizar el estado de esta reserva?';
+    
+    if (!confirm(message)) {
+        return;
+    }
+    
+    executeStatusUpdate(reservationId, newStatus);
+}
+
+// Ejecutar la actualización de estado (función reutilizable)
+function executeStatusUpdate(reservationId, newStatus) {
     const formData = new FormData();
     formData.append('reservation_id', reservationId);
     formData.append('status', newStatus);
+    
+    console.log('=== ACTUALIZANDO ESTADO ===');
+    console.log('ID:', reservationId);
+    console.log('Nuevo estado:', newStatus);
     
     fetch('dashboard_api.php?action=update_reservation_status', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(result => {
+        console.log('Respuesta:', result);
+        
         if (result.success) {
             // Recargar las reservaciones para mostrar el cambio
             loadTodayReservations();
             loadTodayStats();
             
             // Mostrar notificación de éxito
-            showNotification('Estado actualizado correctamente', 'success');
+            const statusText = {
+                'completada': 'Reserva marcada como completada',
+                'cancelada': 'Reserva cancelada exitosamente',
+                'check_in': 'Check-in realizado',
+                'confirmada': 'Reserva confirmada'
+            };
+            showNotification(statusText[newStatus] || 'Estado actualizado correctamente', 'success');
+            
+            // Recargar la página para actualizar todas las tablas
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
             showNotification(result.message || 'Error al actualizar', 'error');
         }
     })
     .catch(error => {
         console.error('Error updating status:', error);
-        showNotification('Error de conexión', 'error');
+        showNotification('Error de conexión: ' + error.message, 'error');
+    });
+}
+
+// Modal de confirmación para cancelar reserva
+function confirmCancelReservation(reservationId) {
+    console.log('Confirmando cancelación de reserva:', reservationId);
+    
+    // Crear un modal de confirmación elegante
+    const confirmationHtml = `
+        <div class="modal fade" id="cancelConfirmModal" tabindex="-1" aria-labelledby="cancelConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title" id="cancelConfirmModalLabel">
+                            <i class="fas fa-ban me-2"></i>Confirmar Cancelación
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <i class="fas fa-calendar-times fa-3x text-warning mb-3"></i>
+                            <h6>¿Estás seguro de que deseas cancelar esta reserva?</h6>
+                            <p class="text-muted">La reserva será marcada como cancelada y no podrá ser utilizada.</p>
+                            <p><strong>ID de Reserva:</strong> <code>${reservationId.substring(0, 8)}...</code></p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </button>
+                        <button type="button" class="btn btn-warning" id="confirmCancelBtn">
+                            <i class="fas fa-ban me-2"></i>Sí, Cancelar Reserva
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('cancelConfirmModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', confirmationHtml);
+    
+    // Mostrar modal
+    const modalElement = document.getElementById('cancelConfirmModal');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // Manejar confirmación
+    document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cancelando...';
+        
+        // Ejecutar la llamada directamente aquí
+        const formData = new FormData();
+        formData.append('reservation_id', reservationId);
+        formData.append('status', 'cancelada');
+        
+        console.log('=== CANCELANDO RESERVA ===');
+        console.log('ID:', reservationId);
+        
+        fetch('dashboard_api.php?action=update_reservation_status', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log('Respuesta cancelación:', result);
+            
+            // Cerrar modal
+            modal.hide();
+            
+            if (result.success) {
+                showNotification('Reserva cancelada exitosamente', 'success');
+                
+                // Recargar datos
+                loadTodayReservations();
+                loadTodayStats();
+                
+                // Recargar la página para actualizar todas las tablas
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification(result.message || 'Error al cancelar la reserva', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error cancelando reserva:', error);
+            showNotification('Error de conexión: ' + error.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+    
+    // Limpiar modal cuando se cierre
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        this.remove();
     });
 }
 
@@ -1278,10 +1883,35 @@ function getTableStatusText(status) {
     return texts[status] || status;
 }
 
-// Mostrar notificación
+// Mostrar notificación visual
 function showNotification(message, type = 'info') {
-    // Implementar sistema de notificaciones
     console.log(`${type.toUpperCase()}: ${message}`);
+    
+    // Configurar colores según el tipo
+    const colors = {
+        'success': 'linear-gradient(to right, #00b09b, #96c93d)',
+        'error': 'linear-gradient(to right, #ff5f6d, #ffc371)',
+        'warning': 'linear-gradient(to right, #f7971e, #ffd200)',
+        'info': 'linear-gradient(to right, #2193b0, #6dd5ed)',
+        'danger': 'linear-gradient(to right, #ff5f6d, #ffc371)'
+    };
+    
+    // Usar Toastify si está disponible
+    if (typeof Toastify !== 'undefined') {
+        Toastify({
+            text: message,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            style: {
+                background: colors[type] || colors['info']
+            },
+            stopOnFocus: true
+        }).showToast();
+    } else {
+        // Fallback a alert si Toastify no está disponible
+        alert(message);
+    }
 }
 
 // Funciones placeholder para las acciones
@@ -1290,7 +1920,245 @@ function viewReservationDetails(id) {
 }
 
 function editReservation(id) {
-    console.log('Editar reservación:', id);
+    console.log('Editando reservación:', id);
+    
+    // Cargar datos de la reserva
+    fetch(`dashboard_api.php?action=get_reservation&id=${id}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const reservation = result.data;
+                console.log('Datos de reserva:', reservation);
+                
+                // Llenar el formulario con los datos actuales
+                document.getElementById('editReservationId').value = reservation.id_reservacion;
+                document.getElementById('editClientInfo').innerHTML = `
+                    <strong>${reservation.cliente_nombre}</strong><br>
+                    <small class="text-muted">${reservation.cliente_email || 'Sin email'}</small>
+                `;
+                document.getElementById('editNumPeople').value = reservation.num_personas;
+                document.getElementById('editStatus').value = reservation.estado;
+                document.getElementById('editReservationDate').value = reservation.fecha_reserva;
+                document.getElementById('editReservationTime').value = reservation.hora_reserva.substring(0, 5); // HH:MM format
+                document.getElementById('editCurrentTable').innerHTML = `
+                    <strong>Mesa ${reservation.mesa_numero}</strong> - Capacidad: ${reservation.mesa_capacidad} personas
+                `;
+                document.getElementById('editSelectedTable').value = reservation.id_mesa;
+                
+                // Limpiar mensaje anterior
+                const messageDiv = document.getElementById('editReservationMessage');
+                messageDiv.className = 'alert d-none';
+                messageDiv.textContent = '';
+                
+                // Mostrar el modal
+                const modal = new bootstrap.Modal(document.getElementById('editReservationModal'));
+                modal.show();
+                
+            } else {
+                showNotification(result.message || 'Error al cargar la reserva', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando reserva:', error);
+            showNotification('Error de conexión al cargar la reserva', 'error');
+        });
+}
+
+// Función para actualizar reserva
+function updateReservation() {
+    const form = document.getElementById('editReservationForm');
+    if (!form) {
+        showNotification('Error: Formulario no encontrado', 'error');
+        return;
+    }
+    
+    // Obtener valores del formulario
+    const reservationId = document.getElementById('editReservationId').value;
+    const date = document.getElementById('editReservationDate').value;
+    const time = document.getElementById('editReservationTime').value;
+    const people = document.getElementById('editNumPeople').value;
+    const status = document.getElementById('editStatus').value;
+    const tableId = document.getElementById('editSelectedTable').value;
+    
+    // Validar que tenemos los datos mínimos
+    if (!reservationId) {
+        showNotification('Error: ID de reservación no encontrado', 'error');
+        return;
+    }
+    
+    if (!date || !time || !people) {
+        showNotification('Error: Fecha, hora y número de personas son requeridos', 'error');
+        return;
+    }
+    
+    // Crear FormData SIN el action (irá en la URL)
+    const formData = new FormData();
+    formData.append('reservation_id', reservationId);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('people', people);
+    formData.append('status', status);
+    formData.append('table_id', tableId);
+    
+    console.log('=== DATOS DE ACTUALIZACIÓN ===');
+    console.log('ID Reserva:', reservationId);
+    console.log('Fecha:', date);
+    console.log('Hora:', time);
+    console.log('Personas:', people);
+    console.log('Estado:', status);
+    console.log('Mesa ID:', tableId);
+    console.log('===============================');
+    
+    // Deshabilitar botón durante la operación
+    const updateBtn = document.getElementById('updateReservationBtn');
+    if (!updateBtn) {
+        showNotification('Error: Botón de actualización no encontrado', 'error');
+        return;
+    }
+    
+    const originalText = updateBtn.innerHTML;
+    updateBtn.disabled = true;
+    updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualizando...';
+    
+    // IMPORTANTE: action va en la URL, no en FormData
+    fetch('dashboard_api.php?action=update_reservation', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text(); // Primero obtener como texto para debug
+    })
+    .then(text => {
+        console.log('Respuesta raw:', text);
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Error parseando JSON:', e);
+            throw new Error('Respuesta del servidor no es JSON válido: ' + text.substring(0, 200));
+        }
+    })
+    .then(result => {
+        console.log('Respuesta actualización:', result);
+        
+        const messageDiv = document.getElementById('editReservationMessage');
+        if (messageDiv) {
+            messageDiv.classList.remove('d-none');
+        }
+        
+        if (result.success) {
+            if (messageDiv) {
+                messageDiv.className = 'alert alert-success';
+                messageDiv.textContent = result.message || 'Reserva actualizada exitosamente';
+            }
+            
+            showNotification(result.message || 'Reserva actualizada exitosamente', 'success');
+            
+            // Recargar datos
+            loadTodayReservations();
+            loadTodayStats();
+            
+            // Cerrar modal y recargar página para actualizar todas las tablas
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editReservationModal'));
+                if (modal) modal.hide();
+                location.reload();
+            }, 1500);
+            
+        } else {
+            const errorMsg = result.message || 'Error al actualizar la reserva';
+            if (messageDiv) {
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.textContent = errorMsg;
+            }
+            showNotification(errorMsg, 'error');
+            console.error('Error del servidor:', errorMsg);
+        }
+    })
+    .catch(error => {
+        console.error('Error en fetch:', error);
+        const errorMsg = 'Error: ' + error.message;
+        const messageDiv = document.getElementById('editReservationMessage');
+        if (messageDiv) {
+            messageDiv.classList.remove('d-none');
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.textContent = errorMsg;
+        }
+        showNotification(errorMsg, 'error');
+    })
+    .finally(() => {
+        // Rehabilitar botón
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = originalText;
+    });
+}
+
+// Función para eliminar reserva
+function deleteReservation() {
+    const reservationId = document.getElementById('editReservationId').value;
+    
+    if (!reservationId) {
+        showNotification('Error: ID de reservación no encontrado', 'error');
+        return;
+    }
+    
+    if (!confirm('¿Estás seguro de que deseas eliminar esta reserva? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'delete_reservation');
+    formData.append('reservation_id', reservationId);
+    
+    console.log('=== ELIMINANDO RESERVA ===');
+    console.log('ID:', reservationId);
+    console.log('=========================');
+    
+    // Deshabilitar botón durante la operación
+    const deleteBtn = document.getElementById('deleteReservationBtn');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+    
+    fetch('dashboard_api.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('Respuesta eliminación:', result);
+        
+        if (result.success) {
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editReservationModal'));
+            modal.hide();
+            
+            // Recargar datos
+            loadTodayReservations();
+            loadTodayStats();
+            
+            showNotification('Reserva eliminada exitosamente', 'success');
+            
+        } else {
+            const messageDiv = document.getElementById('editReservationMessage');
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.textContent = result.message || 'Error al eliminar la reserva';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const messageDiv = document.getElementById('editReservationMessage');
+        messageDiv.className = 'alert alert-danger';
+        messageDiv.textContent = 'Error de conexión al eliminar la reserva';
+    })
+    .finally(() => {
+        // Rehabilitar botón
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalText;
+    });
 }
 
 // Event listeners para selectores
@@ -1313,6 +2181,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners para el formulario de nueva reserva
     setupNewReservationForm();
     
+    // Event listeners para el modal de edición
+    setupEditReservationForm();
+    
     // Event listeners para la gestión de clientes
     setupClientsEvents();
     
@@ -1321,6 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTodayReservations();
     loadTimeSlots();
     loadTablesStatus();
+    updateCurrentDate();
     
     console.log('Dashboard inicializado correctamente');
 });
@@ -1471,6 +2343,366 @@ function loadClients() {
         });
 }
 
+// Configurar event listeners para el modal de edición
+function setupEditReservationForm() {
+    console.log('Configurando formulario de edición...');
+    
+    // Botón para actualizar reserva
+    const updateBtn = document.getElementById('updateReservationBtn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', updateReservation);
+        console.log('Event listener agregado al botón Actualizar');
+    }
+    
+    // Botón para eliminar reserva
+    const deleteBtn = document.getElementById('deleteReservationBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', deleteReservation);
+        console.log('Event listener agregado al botón Eliminar');
+    }
+    
+    // Botón para buscar mesas en edición
+    const editSearchBtn = document.getElementById('editSearchTablesBtn');
+    if (editSearchBtn) {
+        editSearchBtn.addEventListener('click', searchAvailableTablesForEdit);
+        console.log('Event listener agregado al botón buscar mesas en edición');
+    }
+    
+    // Event listeners para validar cambios
+    const editDateInput = document.getElementById('editReservationDate');
+    const editTimeSelect = document.getElementById('editReservationTime');
+    
+    function checkIfSearchNeeded() {
+        if (editDateInput && editTimeSelect) {
+            const searchContainer = document.getElementById('editAvailableTablesContainer');
+            // Si cambian fecha u hora, ocultar la selección de mesas para forzar nueva búsqueda
+            if (searchContainer) {
+                searchContainer.classList.add('d-none');
+            }
+        }
+    }
+    
+    if (editDateInput) editDateInput.addEventListener('change', checkIfSearchNeeded);
+    if (editTimeSelect) editTimeSelect.addEventListener('change', checkIfSearchNeeded);
+}
+
+// Buscar mesas disponibles para edición
+function searchAvailableTablesForEdit() {
+    const date = document.getElementById('editReservationDate').value;
+    const time = document.getElementById('editReservationTime').value;
+    const capacity = document.getElementById('editNumPeople').value;
+    const currentReservationId = document.getElementById('editReservationId').value;
+    
+    console.log('Buscando mesas para edición:', { date, time, capacity, currentReservationId });
+    
+    const searchBtn = document.getElementById('editSearchTablesBtn');
+    const originalText = searchBtn.innerHTML;
+    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Buscando...';
+    searchBtn.disabled = true;
+    
+    // Construir URL con parámetros
+    const params = new URLSearchParams({
+        action: 'get_available_tables',
+        date: date,
+        time: time,
+        capacity: capacity,
+        exclude_reservation: currentReservationId  // Excluir la reserva actual
+    });
+    
+    fetch(`dashboard_api.php?${params}`)
+        .then(response => response.json())
+        .then(result => {
+            console.log('Mesas disponibles para edición:', result);
+            
+            if (result.success) {
+                const tablesContainer = document.getElementById('editAvailableTablesList');
+                const container = document.getElementById('editAvailableTablesContainer');
+                
+                if (result.data.length === 0) {
+                    tablesContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">No hay mesas disponibles para esta fecha y hora.</div></div>';
+                } else {
+                    tablesContainer.innerHTML = '';
+                    
+                    result.data.forEach(table => {
+                        const tableCard = document.createElement('div');
+                        tableCard.className = 'col-md-4 mb-2';
+                        tableCard.innerHTML = `
+                            <div class="table-option" data-table-id="${table.id_mesa}" onclick="selectTableForEdit(${table.id_mesa}, 'Mesa ${table.numero}')">
+                                <i class="fas fa-chair"></i>
+                                <strong>Mesa ${table.numero}</strong>
+                                <span>Capacidad: ${table.capacidad} personas</span>
+                            </div>
+                        `;
+                        tablesContainer.appendChild(tableCard);
+                    });
+                }
+                
+                container.classList.remove('d-none');
+            } else {
+                showNotification(result.message || 'Error al buscar mesas', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error de conexión al buscar mesas', 'error');
+        })
+        .finally(() => {
+            searchBtn.innerHTML = originalText;
+            searchBtn.disabled = false;
+        });
+}
+
+// Seleccionar mesa para edición
+function selectTableForEdit(tableId, tableName) {
+    console.log('Mesa seleccionada para edición:', tableId, tableName);
+    
+    // Remover selección anterior
+    document.querySelectorAll('#editAvailableTablesList .table-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Marcar nueva selección
+    const selectedOption = document.querySelector(`#editAvailableTablesList .table-option[data-table-id="${tableId}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+    }
+    
+    // Guardar selección
+    document.getElementById('editSelectedTable').value = tableId;
+    
+    showNotification(`Mesa ${tableName} seleccionada`, 'success');
+}
+
+// Confirmar eliminación de reserva desde la tabla
+function confirmDeleteReservation(reservationId) {
+    console.log('Confirmando eliminación de reserva:', reservationId);
+    
+    // Crear un modal de confirmación más elegante
+    const confirmationHtml = `
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteConfirmModalLabel">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                            <h6>¿Estás seguro de que deseas eliminar esta reserva?</h6>
+                            <p class="text-muted">Esta acción no se puede deshacer. Se eliminará permanentemente de la base de datos.</p>
+                            <p><strong>ID de Reserva:</strong> <code>${reservationId.substring(0, 8)}...</code></p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                            <i class="fas fa-trash me-2"></i>Sí, Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('deleteConfirmModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', confirmationHtml);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+    
+    // Manejar confirmación
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+        
+        const formData = new FormData();
+        formData.append('reservation_id', reservationId);
+        
+        console.log('=== ELIMINANDO RESERVA ===');
+        console.log('ID:', reservationId);
+        
+        // IMPORTANTE: La acción debe ir en el query string, no en el FormData
+        fetch('dashboard_api.php?action=delete_reservation', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(result => {
+            console.log('Respuesta eliminación:', result);
+            
+            if (result.success) {
+                modal.hide();
+                
+                // Recargar datos
+                loadTodayReservations();
+                loadTodayStats();
+                
+                // Recargar la página para actualizar todas las tablas
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+                
+                showNotification(result.message || 'Reserva eliminada exitosamente', 'success');
+            } else {
+                showNotification(result.message || 'Error al eliminar la reserva', 'error');
+                console.error('Error del servidor:', result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error de red:', error);
+            showNotification('Error de conexión al eliminar la reserva: ' + error.message, 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('deleteConfirmModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Ver detalles de una reserva
+function viewReservationDetails(reservationId) {
+    console.log('Viendo detalles de reserva:', reservationId);
+    
+    fetch(`dashboard_api.php?action=get_reservation&id=${reservationId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const reservation = result.data;
+                
+                // Crear modal dinámicamente para mostrar detalles
+                const modalHtml = `
+                    <div class="modal fade" id="viewReservationModal" tabindex="-1" aria-labelledby="viewReservationModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="viewReservationModalLabel">
+                                        <i class="fas fa-eye me-2"></i>Detalles de la Reserva
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-user me-2"></i>Cliente</h6>
+                                            <p class="mb-3">
+                                                <strong>${reservation.cliente_nombre}</strong><br>
+                                                <small class="text-muted">${reservation.cliente_email || 'Sin email'}</small><br>
+                                                <small class="text-muted">${reservation.cliente_telefono || 'Sin teléfono'}</small>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-chair me-2"></i>Mesa</h6>
+                                            <p class="mb-3">
+                                                <strong>Mesa ${reservation.mesa_numero}</strong><br>
+                                                <small class="text-muted">Capacidad: ${reservation.mesa_capacidad} personas</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-calendar me-2"></i>Fecha y Hora</h6>
+                                            <p class="mb-3">
+                                                <strong>${new Date(reservation.fecha_reserva).toLocaleDateString('es-ES')}</strong><br>
+                                                <strong>${reservation.hora_reserva.substring(0, 5)}</strong>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-users me-2"></i>Comensales</h6>
+                                            <p class="mb-3">
+                                                <strong>${reservation.num_personas} personas</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-info-circle me-2"></i>Estado</h6>
+                                            <p class="mb-3">
+                                                <span class="status ${getStatusClass(reservation.estado)}">
+                                                    ${getStatusText(reservation.estado)}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6><i class="fas fa-clock me-2"></i>Creada</h6>
+                                            <p class="mb-3">
+                                                <small>${new Date(reservation.fecha_creacion).toLocaleString('es-ES')}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <h6><i class="fas fa-building me-2"></i>Restaurante</h6>
+                                            <p class="mb-0">
+                                                <strong>${reservation.restaurante_nombre || 'La Bella Mesa'}</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-warning" onclick="editReservation('${reservation.id_reservacion}'); bootstrap.Modal.getInstance(document.getElementById('viewReservationModal')).hide();">
+                                        <i class="fas fa-edit me-2"></i>Editar
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        Cerrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remover modal anterior si existe
+                const existingModal = document.getElementById('viewReservationModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Agregar nuevo modal al DOM
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Mostrar el modal
+                const modal = new bootstrap.Modal(document.getElementById('viewReservationModal'));
+                modal.show();
+                
+                // Limpiar modal cuando se cierre
+                document.getElementById('viewReservationModal').addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+                
+            } else {
+                showNotification(result.message || 'Error al cargar la reserva', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando reserva:', error);
+            showNotification('Error de conexión al cargar la reserva', 'error');
+        });
+}
+
 // Buscar mesas disponibles
 function searchAvailableTables() {
     const date = document.getElementById('reservationDate').value;
@@ -1557,6 +2789,12 @@ function saveNewReservation() {
     const form = document.getElementById('newReservationForm');
     const formData = new FormData(form);
     
+    // Debug: Mostrar los datos que se están enviando
+    console.log('=== DATOS DE LA RESERVA ===');
+    for (let [key, value] of formData.entries()) {
+        console.log(key + ': ' + value);
+    }
+    
     const saveBtn = document.getElementById('saveReservationBtn');
     const originalText = saveBtn.innerHTML;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
@@ -1566,35 +2804,43 @@ function saveNewReservation() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text().then(text => {
+            console.log('Response text:', text);
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                console.error('Response was:', text);
+                throw new Error('Respuesta no válida del servidor');
+            }
+        });
+    })
     .then(result => {
+        console.log('API Response:', result);
         if (result.success) {
             showMessage('Reserva creada exitosamente', 'success');
             
-            // Cerrar modal después de 2 segundos
+            // Cerrar modal después de 2 segundos y recargar página
             setTimeout(() => {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('newReservationModal'));
                 modal.hide();
                 
-                // Recargar datos del dashboard
-                loadTodayReservations();
-                loadTodayStats();
-                loadTimeSlots();
-                loadTablesStatus();
-                
-                // Limpiar formulario
-                form.reset();
-                document.getElementById('availableTablesContainer').classList.add('d-none');
-                document.getElementById('searchTablesBtn').disabled = true;
-                saveBtn.disabled = true;
+                // Recargar la página para mostrar los datos actualizados desde la base de datos
+                window.location.reload();
             }, 2000);
         } else {
             showMessage(result.message || 'Error al crear la reserva', 'danger');
+            console.error('Error from API:', result);
         }
     })
     .catch(error => {
         console.error('Error saving reservation:', error);
-        showMessage('Error de conexión', 'danger');
+        showMessage('Error: ' + error.message, 'danger');
     })
     .finally(() => {
         saveBtn.innerHTML = originalText;
@@ -1721,6 +2967,9 @@ function showTab(tabName) {
     if (tabName === 'customers') {
         // Mostrar vista de clientes
         showClientsView(mainContentArea);
+    } else if (tabName === 'tables') {
+        // Mostrar vista de mesas
+        showTablesView(mainContentArea);
     } else {
         // Mostrar vista por defecto (dashboard principal)
         showDashboardView(mainContentArea);
@@ -1894,12 +3143,60 @@ function showClientsView(container) {
                         </tr>
                     </thead>
                     <tbody id="clients-table-body">
-                        <!-- Los clientes se cargarán aquí dinámicamente -->
-                        <tr>
-                            <td colspan="6" class="text-center">
-                                <i class="fas fa-spinner fa-spin me-2"></i>Cargando clientes...
-                            </td>
-                        </tr>
+                        <?php if (empty($clientsWithStats)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>No hay clientes registrados</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($clientsWithStats as $client): ?>
+                                <?php
+                                $fechaRegistro = date('d/m/Y', strtotime($client['fecha_registro']));
+                                $ultimaReserva = $client['ultima_reserva'] ? date('d/m/Y', strtotime($client['ultima_reserva'])) : 'Nunca';
+                                $totalReservas = (int)$client['total_reservas'];
+                                ?>
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <img src="../src/images/default-avatar.png" alt="" class="user-avatar-sm" 
+                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGM0Y0RjYiLz4KPHBhdGggZD0iTTE2IDhDMTQuOCA4IDEzLjggOC44IDEzLjggMTBDMTMuOCAxMS4yIDE0LjggMTIgMTYgMTJDMTcuMiAxMiAxOC4yIDExLjIgMTguMiAxMEMxOC4yIDguOCAxNy4yIDggMTYgOFoiIGZpbGw9IiM5Q0E0QUMiLz4KPHBhdGggZD0iTTIyIDIyQzIyIDIyIDIyIDIwIDIyIDE4QzIyIDE2IDE5IDEzLjggMTYgMTMuOEMxMyAxMy44IDEwIDE2IDEwIDE4QzEwIDIwIDEwIDIyIDEwIDIySDIyWiIgZmlsbD0iIzlDQTRBQyIvPgo8L3N2Zz4K'">
+                                            <div>
+                                                <div class="user-name"><?php echo htmlspecialchars($client['nombre']); ?></div>
+                                                <div class="user-email"><?php echo htmlspecialchars($client['correo'] ?? 'Sin email'); ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($client['correo'] ?? 'Sin email'); ?></td>
+                                    <td><?php echo htmlspecialchars($client['telefono'] ?? 'Sin teléfono'); ?></td>
+                                    <td><?php echo $fechaRegistro; ?></td>
+                                    <td>
+                                        <span class="badge <?php echo $totalReservas > 0 ? 'bg-success' : 'bg-secondary'; ?>">
+                                            <?php echo $totalReservas; ?> reservas
+                                        </span>
+                                        <?php if ($client['ultima_reserva']): ?>
+                                            <br><small class="text-muted">Última: <?php echo $ultimaReserva; ?></small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-info btn-action" title="Ver Detalles" onclick="viewClientDetails('<?php echo htmlspecialchars($client['id_usuario']); ?>')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-warning btn-action" title="Editar" onclick="editClient('<?php echo htmlspecialchars($client['id_usuario']); ?>')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-success btn-action" title="Nueva Reserva" onclick="createReservationForClient('<?php echo htmlspecialchars($client['id_usuario']); ?>')">
+                                                <i class="fas fa-calendar-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -1925,6 +3222,753 @@ function showClientsView(container) {
     // Cargar datos de clientes
     loadClientsData();
 }
+
+// ========== VISTA DE MESAS ==========
+
+// Mostrar vista de mesas
+function showTablesView(container) {
+    container.innerHTML = `
+        <div class="header">
+            <div class="header-left">
+                <button id="toggle-sidebar" class="sidebar-toggler" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">Gestión de Mesas - Sistema de Reservas</h1>
+            </div>
+            <div class="header-right">
+                <button id="dark-mode-toggle" class="btn btn-icon" aria-label="Toggle dark mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="search-container">
+                    <input type="text" id="table-search" placeholder="Buscar mesa..." aria-label="Buscar mesa" onkeyup="filterTables()">
+                    <button class="search-btn" aria-label="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="notification-bell" onclick="toggleNotifications()">
+                    <i class="fas fa-bell fa-lg"></i>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-dropdown">
+                    <div class="user-info" onclick="toggleUserMenu()">
+                        <img src="277591295863fc51586860f820966128.jpg" alt="Usuario" class="user-avatar">
+                        <span class="user-name"><?php echo htmlspecialchars($userName); ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Header de Mesas -->
+        <div class="dashboard-header">
+            <h2><i class="fas fa-chair me-2"></i>Gestión de Mesas</h2>
+            <div class="quick-actions">
+                <button class="btn btn-primary" onclick="openNewTableModal()">
+                    <i class="fas fa-plus me-2"></i>Nueva Mesa
+                </button>
+                <button class="btn btn-warning" onclick="refreshTables()" data-toggle="tooltip" title="Actualizar lista">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Estadísticas de Mesas -->
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title">Estadísticas de Mesas</h3>
+            </div>
+            <div class="dashboard-cards">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="card-icon bg-primary">
+                            <i class="fas fa-chair"></i>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-value" id="total-tables">0</div>
+                            <div class="card-label">Total Mesas</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="card-icon bg-success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-value" id="total-capacity">0</div>
+                            <div class="card-label">Capacidad Total</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="card-icon bg-info">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-value" id="avg-capacity">0</div>
+                            <div class="card-label">Capacidad Promedio</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="card-icon bg-warning">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-value" id="occupancy-today">0%</div>
+                            <div class="card-label">Ocupación Hoy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Mesas -->
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title">Lista de Mesas</h3>
+                <div class="section-actions">
+                    <select id="filter-capacity" class="form-control" onchange="filterTables()" style="width: auto;">
+                        <option value="">Todas las capacidades</option>
+                        <option value="2">2 personas</option>
+                        <option value="4">4 personas</option>
+                        <option value="6">6 personas</option>
+                        <option value="8">8+ personas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover" id="tables-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTablesTable(0)">Número <i class="fas fa-sort"></i></th>
+                            <th onclick="sortTablesTable(1)">Capacidad <i class="fas fa-sort"></i></th>
+                            <th onclick="sortTablesTable(2)">Restaurante <i class="fas fa-sort"></i></th>
+                            <th>Estado Hoy</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tables-list">
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <i class="fas fa-spinner fa-spin"></i> Cargando mesas...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Vista de Mesas en Grid -->
+        <div class="section">
+            <div class="section-header">
+                <h3 class="section-title">Vista de Mesas</h3>
+            </div>
+            <div id="tables-grid" class="table-map">
+                <!-- Las mesas se cargarán aquí -->
+            </div>
+            <div class="status-legend mt-3">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #d4edda;"></div>
+                    <span>Libre</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #fff3cd;"></div>
+                    <span>Reservada</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f8d7da;"></div>
+                    <span>Ocupada</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Cargar datos de mesas
+    loadTablesData();
+}
+
+// Cargar todos los datos de mesas
+function loadTablesData() {
+    loadAllTables();
+    loadTablesStats();
+    loadTablesWithStatus();
+}
+
+// Cargar todas las mesas
+function loadAllTables() {
+    fetch('dashboard_api.php?action=get_all_tables')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                window.allTables = result.data;
+                renderTablesTable(result.data);
+            } else {
+                console.error('Error al cargar mesas:', result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
+
+// Cargar estadísticas de mesas
+function loadTablesStats() {
+    fetch('dashboard_api.php?action=get_tables_stats')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const stats = result.data;
+                document.getElementById('total-tables').textContent = stats.total_mesas || 0;
+                document.getElementById('total-capacity').textContent = stats.capacidad_total || 0;
+                document.getElementById('avg-capacity').textContent = Math.round(stats.capacidad_promedio || 0);
+                document.getElementById('occupancy-today').textContent = (stats.porcentaje_ocupacion || 0) + '%';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Cargar mesas con estado actual
+function loadTablesWithStatus() {
+    fetch('dashboard_api.php?action=get_tables_with_status')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                renderTablesGrid(result.data);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Renderizar tabla de mesas
+function renderTablesTable(tables) {
+    const tbody = document.getElementById('tables-list');
+    if (!tbody) return;
+    
+    if (!tables || tables.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-4">
+                    <i class="fas fa-chair fa-3x text-muted mb-2"></i>
+                    <p>No hay mesas registradas</p>
+                    <button class="btn btn-primary btn-sm" onclick="openNewTableModal()">
+                        <i class="fas fa-plus me-2"></i>Agregar Primera Mesa
+                    </button>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = tables.map(table => `
+        <tr data-table-id="${table.id_mesa}">
+            <td>
+                <span class="badge bg-primary">Mesa ${table.numero}</span>
+            </td>
+            <td>
+                <i class="fas fa-users me-2"></i>${table.capacidad} personas
+            </td>
+            <td>${table.restaurante_nombre || 'N/A'}</td>
+            <td>
+                <span class="status ${getTableStatusClass(table.estado || 'libre')}">
+                    ${getTableStatusText(table.estado || 'libre')}
+                </span>
+            </td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn btn-info btn-action" title="Ver Detalles" onclick="viewTableDetails('${table.id_mesa}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-warning btn-action" title="Editar" onclick="editTable('${table.id_mesa}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-action" title="Eliminar" onclick="confirmDeleteTable('${table.id_mesa}', ${table.numero})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Renderizar grid visual de mesas
+function renderTablesGrid(tables) {
+    const grid = document.getElementById('tables-grid');
+    if (!grid) return;
+    
+    if (!tables || tables.length === 0) {
+        grid.innerHTML = '<p class="text-muted text-center">No hay mesas para mostrar</p>';
+        return;
+    }
+    
+    grid.innerHTML = tables.map(table => {
+        const bgColor = table.estado === 'ocupada' ? '#f8d7da' : 
+                        table.estado === 'reservada' ? '#fff3cd' : '#d4edda';
+        const icon = table.estado === 'ocupada' ? 'fa-user-check' : 
+                     table.estado === 'reservada' ? 'fa-clock' : 'fa-chair';
+        
+        return `
+            <div class="card table-item" style="background-color: ${bgColor}; cursor: pointer; color: #000;" 
+                 onclick="viewTableDetails('${table.id_mesa}')" title="Click para ver detalles">
+                <i class="fas ${icon} fa-2x" style="color: #333;"></i>
+                <div class="table-item-label" style="color: #000; font-weight: bold;">Mesa ${table.numero}</div>
+                <div class="table-item-status" style="color: #333;">${table.capacidad} pers.</div>
+                <small style="color: #666;">${getTableStatusText(table.estado || 'libre')}</small>
+                ${table.proxima_reserva ? `<small class="d-block mt-1" style="color: #555;"><i class="fas fa-clock"></i> ${table.proxima_reserva.substring(0,5)}</small>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Obtener clase CSS para estado de mesa
+function getTableStatusClass(status) {
+    const classes = {
+        'libre': 'status-confirmed',
+        'reservada': 'status-pending',
+        'ocupada': 'status-cancelled'
+    };
+    return classes[status] || 'status-pending';
+}
+
+// Obtener texto para estado de mesa
+function getTableStatusText(status) {
+    const texts = {
+        'libre': 'Libre',
+        'reservada': 'Reservada',
+        'ocupada': 'Ocupada'
+    };
+    return texts[status] || 'Desconocido';
+}
+
+// Filtrar mesas
+function filterTables() {
+    const searchTerm = document.getElementById('table-search')?.value?.toLowerCase() || '';
+    const capacityFilter = document.getElementById('filter-capacity')?.value || '';
+    
+    if (!window.allTables) return;
+    
+    let filtered = window.allTables.filter(table => {
+        const matchesSearch = table.numero.toString().includes(searchTerm) || 
+                             (table.restaurante_nombre || '').toLowerCase().includes(searchTerm);
+        
+        let matchesCapacity = true;
+        if (capacityFilter) {
+            if (capacityFilter === '8') {
+                matchesCapacity = table.capacidad >= 8;
+            } else {
+                matchesCapacity = table.capacidad == capacityFilter;
+            }
+        }
+        
+        return matchesSearch && matchesCapacity;
+    });
+    
+    renderTablesTable(filtered);
+}
+
+// Ordenar tabla de mesas
+let tablesSortDirection = {};
+function sortTablesTable(columnIndex) {
+    if (!window.allTables) return;
+    
+    const direction = tablesSortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+    tablesSortDirection[columnIndex] = direction;
+    
+    const sorted = [...window.allTables].sort((a, b) => {
+        let valA, valB;
+        switch(columnIndex) {
+            case 0: valA = a.numero; valB = b.numero; break;
+            case 1: valA = a.capacidad; valB = b.capacidad; break;
+            case 2: valA = a.restaurante_nombre || ''; valB = b.restaurante_nombre || ''; break;
+            default: return 0;
+        }
+        
+        if (typeof valA === 'string') {
+            return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+        return direction === 'asc' ? valA - valB : valB - valA;
+    });
+    
+    renderTablesTable(sorted);
+}
+
+// Abrir modal de nueva mesa
+function openNewTableModal() {
+    const modalHtml = `
+        <div class="modal fade" id="newTableModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-plus me-2"></i>Nueva Mesa
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="newTableForm">
+                            <div class="mb-3">
+                                <label for="newTableNumber" class="form-label">Número de Mesa *</label>
+                                <input type="number" class="form-control" id="newTableNumber" min="1" required>
+                                <small class="text-muted">Número único para identificar la mesa</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newTableCapacity" class="form-label">Capacidad *</label>
+                                <select class="form-select" id="newTableCapacity" required>
+                                    <option value="">Seleccionar capacidad...</option>
+                                    <option value="2">2 personas</option>
+                                    <option value="4">4 personas</option>
+                                    <option value="6">6 personas</option>
+                                    <option value="8">8 personas</option>
+                                    <option value="10">10 personas</option>
+                                    <option value="12">12 personas</option>
+                                </select>
+                            </div>
+                            <div id="newTableMessage" class="alert d-none"></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveNewTable()">
+                            <i class="fas fa-save me-2"></i>Guardar Mesa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remover modal anterior si existe
+    const existingModal = document.getElementById('newTableModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('newTableModal'));
+    modal.show();
+    
+    document.getElementById('newTableModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Guardar nueva mesa
+function saveNewTable() {
+    const numero = document.getElementById('newTableNumber').value;
+    const capacidad = document.getElementById('newTableCapacity').value;
+    const messageDiv = document.getElementById('newTableMessage');
+    
+    if (!numero || !capacidad) {
+        messageDiv.className = 'alert alert-danger';
+        messageDiv.textContent = 'Por favor complete todos los campos';
+        messageDiv.classList.remove('d-none');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('numero', numero);
+    formData.append('capacidad', capacidad);
+    
+    fetch('dashboard_api.php?action=create_table', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            messageDiv.className = 'alert alert-success';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('d-none');
+            
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('newTableModal')).hide();
+                refreshTables();
+            }, 1000);
+        } else {
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('d-none');
+        }
+    })
+    .catch(error => {
+        messageDiv.className = 'alert alert-danger';
+        messageDiv.textContent = 'Error de conexión';
+        messageDiv.classList.remove('d-none');
+    });
+}
+
+// Ver detalles de mesa
+function viewTableDetails(tableId) {
+    fetch(`dashboard_api.php?action=get_table&id=${tableId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const table = result.data;
+                const modalHtml = `
+                    <div class="modal fade" id="viewTableModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-chair me-2"></i>Mesa ${table.numero}
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="text-center mb-4">
+                                        <i class="fas fa-chair fa-4x text-primary mb-3"></i>
+                                        <h4>Mesa #${table.numero}</h4>
+                                    </div>
+                                    <table class="table">
+                                        <tr>
+                                            <th><i class="fas fa-hashtag me-2"></i>ID</th>
+                                            <td><code>${table.id_mesa.substring(0, 8)}...</code></td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="fas fa-users me-2"></i>Capacidad</th>
+                                            <td>${table.capacidad} personas</td>
+                                        </tr>
+                                        <tr>
+                                            <th><i class="fas fa-store me-2"></i>Restaurante</th>
+                                            <td>${table.restaurante_nombre || 'N/A'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-warning" onclick="editTable('${table.id_mesa}')">
+                                        <i class="fas fa-edit me-2"></i>Editar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const existingModal = document.getElementById('viewTableModal');
+                if (existingModal) existingModal.remove();
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const modal = new bootstrap.Modal(document.getElementById('viewTableModal'));
+                modal.show();
+                
+                document.getElementById('viewTableModal').addEventListener('hidden.bs.modal', function() {
+                    this.remove();
+                });
+            } else {
+                showNotification(result.message || 'Error al cargar mesa', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error de conexión', 'error');
+        });
+}
+
+// Editar mesa
+function editTable(tableId) {
+    // Cerrar cualquier modal abierto
+    const openModals = document.querySelectorAll('.modal.show');
+    openModals.forEach(m => bootstrap.Modal.getInstance(m)?.hide());
+    
+    fetch(`dashboard_api.php?action=get_table&id=${tableId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const table = result.data;
+                const modalHtml = `
+                    <div class="modal fade" id="editTableModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-edit me-2"></i>Editar Mesa ${table.numero}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="editTableForm">
+                                        <input type="hidden" id="editTableId" value="${table.id_mesa}">
+                                        <div class="mb-3">
+                                            <label for="editTableNumber" class="form-label">Número de Mesa *</label>
+                                            <input type="number" class="form-control" id="editTableNumber" 
+                                                   value="${table.numero}" min="1" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="editTableCapacity" class="form-label">Capacidad *</label>
+                                            <select class="form-select" id="editTableCapacity" required>
+                                                <option value="2" ${table.capacidad == 2 ? 'selected' : ''}>2 personas</option>
+                                                <option value="4" ${table.capacidad == 4 ? 'selected' : ''}>4 personas</option>
+                                                <option value="6" ${table.capacidad == 6 ? 'selected' : ''}>6 personas</option>
+                                                <option value="8" ${table.capacidad == 8 ? 'selected' : ''}>8 personas</option>
+                                                <option value="10" ${table.capacidad == 10 ? 'selected' : ''}>10 personas</option>
+                                                <option value="12" ${table.capacidad == 12 ? 'selected' : ''}>12 personas</option>
+                                            </select>
+                                        </div>
+                                        <div id="editTableMessage" class="alert d-none"></div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </button>
+                                    <button type="button" class="btn btn-warning" onclick="updateTable()">
+                                        <i class="fas fa-save me-2"></i>Guardar Cambios
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    const existingModal = document.getElementById('editTableModal');
+                    if (existingModal) existingModal.remove();
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    const modal = new bootstrap.Modal(document.getElementById('editTableModal'));
+                    modal.show();
+                    
+                    document.getElementById('editTableModal').addEventListener('hidden.bs.modal', function() {
+                        this.remove();
+                    });
+                }, 300);
+            } else {
+                showNotification(result.message || 'Error al cargar mesa', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error de conexión', 'error');
+        });
+}
+
+// Actualizar mesa
+function updateTable() {
+    const tableId = document.getElementById('editTableId').value;
+    const numero = document.getElementById('editTableNumber').value;
+    const capacidad = document.getElementById('editTableCapacity').value;
+    const messageDiv = document.getElementById('editTableMessage');
+    
+    if (!numero || !capacidad) {
+        messageDiv.className = 'alert alert-danger';
+        messageDiv.textContent = 'Por favor complete todos los campos';
+        messageDiv.classList.remove('d-none');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('table_id', tableId);
+    formData.append('numero', numero);
+    formData.append('capacidad', capacidad);
+    
+    fetch('dashboard_api.php?action=update_table', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            messageDiv.className = 'alert alert-success';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('d-none');
+            
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('editTableModal')).hide();
+                refreshTables();
+            }, 1000);
+        } else {
+            messageDiv.className = 'alert alert-danger';
+            messageDiv.textContent = result.message;
+            messageDiv.classList.remove('d-none');
+        }
+    })
+    .catch(error => {
+        messageDiv.className = 'alert alert-danger';
+        messageDiv.textContent = 'Error de conexión';
+        messageDiv.classList.remove('d-none');
+    });
+}
+
+// Confirmar eliminación de mesa
+function confirmDeleteTable(tableId, tableNumber) {
+    const modalHtml = `
+        <div class="modal fade" id="deleteTableModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                        <h5>¿Eliminar Mesa ${tableNumber}?</h5>
+                        <p class="text-muted">Esta acción no se puede deshacer. La mesa será eliminada permanentemente.</p>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No se puede eliminar si la mesa tiene reservas activas o futuras.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="deleteTable('${tableId}')">
+                            <i class="fas fa-trash me-2"></i>Sí, Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('deleteTableModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('deleteTableModal'));
+    modal.show();
+    
+    document.getElementById('deleteTableModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Eliminar mesa
+function deleteTable(tableId) {
+    const formData = new FormData();
+    formData.append('table_id', tableId);
+    
+    fetch('dashboard_api.php?action=delete_table', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        bootstrap.Modal.getInstance(document.getElementById('deleteTableModal')).hide();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            refreshTables();
+        } else {
+            showNotification(result.message || 'Error al eliminar mesa', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error de conexión', 'error');
+    });
+}
+
+// Refrescar lista de mesas
+function refreshTables() {
+    loadTablesData();
+}
+
+// ========== FIN VISTA DE MESAS ==========
 
 // Mostrar vista del dashboard principal
 function showDashboardView(container) {
@@ -2370,6 +4414,211 @@ function validateClientField(input, fieldType) {
     return isValid;
 }
 
+// =================== FUNCIONES PARA FILTROS DE RESERVAS ===================
+
+// Variables globales para reservas
+let originalReservations = [];
+let filteredReservations = [];
+
+// Función para filtrar reservaciones
+function filterReservations() {
+    const periodFilter = document.getElementById('filter-period').value;
+    const statusFilter = document.getElementById('filter-status').value;
+    const searchFilter = document.getElementById('filter-search').value.toLowerCase();
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+    
+    // Mostrar/ocultar rango personalizado
+    const customRange = document.getElementById('custom-date-range');
+    if (periodFilter === 'custom') {
+        customRange.style.display = 'block';
+    } else {
+        customRange.style.display = 'none';
+    }
+    
+    // Obtener todas las filas de la tabla
+    const table = document.getElementById('all-reservations-table');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    let visibleCount = 0;
+    let filterSummary = [];
+    
+    rows.forEach(row => {
+        if (row.cells.length === 1 && row.cells[0].colSpan === 8) {
+            // Es la fila de "No hay reservas"
+            return;
+        }
+        
+        let showRow = true;
+        const reservationDate = row.cells[1].getAttribute('data-date');
+        const reservationStatus = row.cells[6].getAttribute('data-status').toLowerCase();
+        const clientName = row.cells[3].getAttribute('data-client');
+        
+        // Filtro por período
+        if (periodFilter !== 'all') {
+            const today = new Date();
+            const reservationDateObj = new Date(reservationDate);
+            
+            switch (periodFilter) {
+                case 'today':
+                    showRow = isSameDate(reservationDateObj, today);
+                    break;
+                case 'tomorrow':
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    showRow = isSameDate(reservationDateObj, tomorrow);
+                    break;
+                case 'this-week':
+                    showRow = isThisWeek(reservationDateObj);
+                    break;
+                case 'next-week':
+                    showRow = isNextWeek(reservationDateObj);
+                    break;
+                case 'future':
+                    showRow = reservationDateObj >= today;
+                    break;
+                case 'custom':
+                    if (dateFrom && dateTo) {
+                        const fromDate = new Date(dateFrom);
+                        const toDate = new Date(dateTo);
+                        showRow = reservationDateObj >= fromDate && reservationDateObj <= toDate;
+                    }
+                    break;
+            }
+        }
+        
+        // Filtro por estado
+        if (showRow && statusFilter) {
+            showRow = reservationStatus === statusFilter.toLowerCase();
+        }
+        
+        // Filtro por búsqueda de cliente
+        if (showRow && searchFilter) {
+            showRow = clientName.includes(searchFilter);
+        }
+        
+        // Mostrar/ocultar fila
+        if (showRow) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Actualizar contador
+    document.getElementById('reservations-count').textContent = `Mostrando ${visibleCount} reservas`;
+    
+    // Actualizar resumen de filtros
+    if (statusFilter) filterSummary.push(`Estado: ${statusFilter}`);
+    if (searchFilter) filterSummary.push(`Búsqueda: "${searchFilter}"`);
+    if (periodFilter !== 'all') filterSummary.push(`Período: ${getPeriodText(periodFilter)}`);
+    
+    document.getElementById('filter-summary').textContent = filterSummary.length ? 
+        '| Filtros: ' + filterSummary.join(', ') : '';
+}
+
+// Función para limpiar filtros
+function clearFilters() {
+    document.getElementById('filter-period').value = 'all';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-search').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    document.getElementById('custom-date-range').style.display = 'none';
+    
+    filterReservations();
+}
+
+// Función para obtener texto del período
+function getPeriodText(period) {
+    const texts = {
+        'today': 'Hoy',
+        'tomorrow': 'Mañana', 
+        'this-week': 'Esta semana',
+        'next-week': 'Próxima semana',
+        'future': 'Futuras',
+        'custom': 'Rango personalizado'
+    };
+    return texts[period] || period;
+}
+
+// Función para verificar si una fecha es hoy
+function isSameDate(date1, date2) {
+    return date1.toDateString() === date2.toDateString();
+}
+
+// Función para verificar si una fecha está en esta semana
+function isThisWeek(date) {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+    return date >= startOfWeek && date <= endOfWeek;
+}
+
+// Función para verificar si una fecha está en la próxima semana
+function isNextWeek(date) {
+    const today = new Date();
+    const startOfNextWeek = new Date(today);
+    startOfNextWeek.setDate(today.getDate() + (7 - today.getDay()));
+    const endOfNextWeek = new Date(startOfNextWeek);
+    endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+    
+    return date >= startOfNextWeek && date <= endOfNextWeek;
+}
+
+// Función para ordenar tabla
+function sortTable(columnIndex) {
+    const table = document.getElementById('all-reservations-table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => 
+        row.cells.length > 1 // Excluir fila de "No hay reservas"
+    );
+    
+    if (rows.length === 0) return;
+    
+    const isAscending = !table.dataset.sortDirection || table.dataset.sortDirection === 'desc';
+    table.dataset.sortDirection = isAscending ? 'asc' : 'desc';
+    
+    rows.sort((a, b) => {
+        let aValue = a.cells[columnIndex].textContent.trim();
+        let bValue = b.cells[columnIndex].textContent.trim();
+        
+        // Para fechas y números, usar comparación numérica
+        if (columnIndex === 1) { // Fecha
+            aValue = new Date(a.cells[columnIndex].getAttribute('data-date'));
+            bValue = new Date(b.cells[columnIndex].getAttribute('data-date'));
+        } else if (columnIndex === 2) { // Hora
+            aValue = a.cells[columnIndex].getAttribute('data-time');
+            bValue = b.cells[columnIndex].getAttribute('data-time');
+        } else if (columnIndex === 5) { // Número de personas
+            aValue = parseInt(a.cells[columnIndex].getAttribute('data-people'));
+            bValue = parseInt(b.cells[columnIndex].getAttribute('data-people'));
+        }
+        
+        if (aValue < bValue) return isAscending ? -1 : 1;
+        if (aValue > bValue) return isAscending ? 1 : -1;
+        return 0;
+    });
+    
+    // Reordenar filas en la tabla
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Actualizar iconos de ordenamiento
+    const headers = table.querySelectorAll('th i.fas');
+    headers.forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+    
+    const currentHeader = table.querySelectorAll('th')[columnIndex].querySelector('i');
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${isAscending ? 'up' : 'down'}`;
+    }
+}
+
 // Asegurar que el loader no bloquee la UI cuando se muestran modales
 document.addEventListener('DOMContentLoaded', function() {
     // Ocultar TODOS los posibles overlays/loaders
@@ -2404,6 +4653,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Modal completamente visible');
         });
     }
+    
+    // Inicializar filtros de reservas
+    filterReservations();
 });
 </script>
 
