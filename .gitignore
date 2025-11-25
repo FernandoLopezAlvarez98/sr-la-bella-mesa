@@ -18,6 +18,7 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+*.sql
 
 # Archivos del sistema operativo
 .DS_Store
@@ -42,6 +43,7 @@ logs/
 *.sqlite
 *.sqlite3
 *.db
+script.sql
 
 # Archivos de respaldo
 *.bak

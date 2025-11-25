@@ -747,5 +747,385 @@ class Reservation
         $result = $this->connection->fetchOne($sql, [$userId]);
         return $result['total'] ?? 0;
     }
+
+    // ==================== MÉTODOS PARA SUPER ADMIN ====================
+
+    /**
+     * Obtener todas las reservaciones del sistema con detalles
+     */
+    public function getAllReservationsWithDetails()
+    {
+        $sql = "SELECT 
+                    r.id_reservacion,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.num_personas,
+                    r.estado,
+                    r.fecha_creacion,
+                    r.comentarios_especiales,
+                    u.nombre as cliente_nombre,
+                    u.correo as cliente_email,
+                    u.telefono as cliente_telefono,
+                    m.numero_mesa,
+                    m.capacidad as mesa_capacidad,
+                    rest.nombre as restaurante_nombre,
+                    rest.direccion as restaurante_direccion
+                FROM reservacion r
+                LEFT JOIN usuario u ON r.id_usuario = u.id_usuario
+                LEFT JOIN mesa m ON r.id_mesa = m.id_mesa
+                LEFT JOIN restaurante rest ON r.id_restaurante = rest.id_restaurante
+                ORDER BY r.fecha_creacion DESC";
+        
+        return $this->connection->fetchAll($sql);
+    }
+
+    /**
+     * Obtener total de reservaciones
+     */
+    public function getTotalReservations()
+    {
+        $sql = "SELECT COUNT(*) as total FROM reservacion";
+        $result = $this->connection->fetchOne($sql);
+        return (int)($result['total'] ?? 0);
+    }
+
+    /**
+     * Actualizar estado de reservación
+     */
+    public function updateStatus($reservationId, $newStatus)
+    {
+        $sql = "UPDATE reservacion 
+                SET estado = ? 
+                WHERE id_reservacion = ?";
+        
+        $result = $this->connection->execute($sql, [$newStatus, $reservationId]);
+        return $result > 0;
+    }
+
+    /**
+     * Obtener reservaciones por estado
+     */
+    public function getReservationsByStatus()
+    {
+        $sql = "SELECT 
+                    estado,
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN DATE(fecha_reserva) = CURDATE() THEN 1 END) as hoy
+                FROM reservacion
+                GROUP BY estado
+                ORDER BY total DESC";
+        
+        return $this->connection->fetchAll($sql);
+    }
+
+    /**
+     * Obtener reservaciones del mes actual
+     */
+    public function getMonthlyReservationsCount()
+    {
+        $sql = "SELECT COUNT(*) as total
+                FROM reservacion 
+                WHERE YEAR(fecha_reserva) = YEAR(CURDATE()) 
+                AND MONTH(fecha_reserva) = MONTH(CURDATE())";
+        
+        $result = $this->connection->fetchOne($sql);
+        return (int)($result['total'] ?? 0);
+    }
+
+    /**
+     * Obtener reservaciones por mes (para gráficos)
+     */
+    public function getReservationsByMonth($months = 12)
+    {
+        $sql = "SELECT 
+                    DATE_FORMAT(fecha_reserva, '%Y-%m') as mes,
+                    COUNT(*) as total
+                FROM reservacion 
+                WHERE fecha_reserva >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(fecha_reserva, '%Y-%m')
+                ORDER BY mes ASC";
+        
+        return $this->connection->fetchAll($sql, [$months]);
+    }
+
+    /**
+     * Obtener horas pico de reservaciones
+     */
+    public function getPeakHours()
+    {
+        $sql = "SELECT 
+                    HOUR(hora_reserva) as hora,
+                    COUNT(*) as total
+                FROM reservacion 
+                WHERE fecha_reserva >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                GROUP BY HOUR(hora_reserva)
+                ORDER BY total DESC
+                LIMIT 10";
+        
+        return $this->connection->fetchAll($sql);
+    }
+
+    /**
+     * Obtener estimado de ingresos (basado en promedio por persona)
+     */
+    public function getEstimatedRevenue($averagePerPerson = 25)
+    {
+        $sql = "SELECT 
+                    SUM(num_personas) as total_personas
+                FROM reservacion 
+                WHERE estado IN ('confirmada', 'completada', 'check_in')
+                AND fecha_reserva >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        
+        $result = $this->connection->fetchOne($sql);
+        $totalPersonas = (int)($result['total_personas'] ?? 0);
+        
+        return $totalPersonas * $averagePerPerson;
+    }
+
+    /**
+     * Obtener datos de crecimiento de usuarios (basado en reservaciones)
+     */
+    public function getUserGrowthData($months = 6)
+    {
+        $sql = "SELECT 
+                    DATE_FORMAT(r.fecha_creacion, '%Y-%m') as mes,
+                    COUNT(DISTINCT r.id_usuario) as usuarios_activos,
+                    COUNT(*) as total_reservaciones
+                FROM reservacion r
+                WHERE r.fecha_creacion >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                GROUP BY DATE_FORMAT(r.fecha_creacion, '%Y-%m')
+                ORDER BY mes ASC";
+        
+        return $this->connection->fetchAll($sql, [$months]);
+    }
+
+    /**
+     * Eliminar reservación (solo Super Admin)
+     */
+    public function delete($reservationId)
+    {
+        $sql = "DELETE FROM reservacion WHERE id_reservacion = ?";
+        $result = $this->connection->execute($sql, [$reservationId]);
+        return $result > 0;
+    }
+
+    /**
+     * Obtener detalles completos de una reservación
+     */
+    public function getById($reservationId)
+    {
+        $sql = "SELECT 
+                    r.*,
+                    u.nombre as cliente_nombre,
+                    u.correo as cliente_email,
+                    u.telefono as cliente_telefono,
+                    m.numero_mesa,
+                    m.capacidad as mesa_capacidad,
+                    rest.nombre as restaurante_nombre,
+                    rest.direccion as restaurante_direccion,
+                    rest.telefono as restaurante_telefono
+                FROM reservacion r
+                LEFT JOIN usuario u ON r.id_usuario = u.id_usuario
+                LEFT JOIN mesa m ON r.id_mesa = m.id_mesa
+                LEFT JOIN restaurante rest ON r.id_restaurante = rest.id_restaurante
+                WHERE r.id_reservacion = ?";
+        
+        return $this->connection->fetchOne($sql, [$reservationId]);
+    }
+
+    // ==================== MÉTODOS FILTRADOS POR RESTAURANTE (PARA ADMIN) ====================
+
+    /**
+     * Obtener reservaciones del día filtradas por restaurante
+     */
+    public function getTodayReservationsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT 
+                    r.id_reservacion,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.num_personas,
+                    r.estado,
+                    r.fecha_creacion,
+                    u.nombre as cliente_nombre,
+                    u.correo as cliente_email,
+                    u.telefono as cliente_telefono,
+                    m.numero as mesa_numero,
+                    rest.nombre as restaurante_nombre
+                FROM reservacion r
+                INNER JOIN usuario u ON r.id_usuario = u.id_usuario
+                INNER JOIN mesa m ON r.id_mesa = m.id_mesa
+                INNER JOIN restaurante rest ON r.id_restaurante = rest.id_restaurante
+                WHERE DATE(r.fecha_reserva) = CURDATE()
+                AND r.id_restaurante = ?
+                ORDER BY r.hora_reserva ASC";
+        
+        return $this->connection->fetchAll($sql, [$restaurantId]);
+    }
+
+    /**
+     * Obtener todas las reservaciones filtradas por restaurante
+     */
+    public function getAllReservationsByRestaurant($restaurantId, $filters = [])
+    {
+        $sql = "SELECT 
+                    r.id_reservacion,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.num_personas,
+                    r.estado,
+                    r.fecha_creacion,
+                    u.nombre as cliente_nombre,
+                    u.correo as cliente_email,
+                    u.telefono as cliente_telefono,
+                    m.numero as mesa_numero,
+                    rest.nombre as restaurante_nombre
+                FROM reservacion r
+                INNER JOIN usuario u ON r.id_usuario = u.id_usuario
+                INNER JOIN mesa m ON r.id_mesa = m.id_mesa
+                INNER JOIN restaurante rest ON r.id_restaurante = rest.id_restaurante
+                WHERE r.id_restaurante = ?";
+        
+        $params = [$restaurantId];
+        
+        // Filtro por fecha desde
+        if (!empty($filters['fecha_desde'])) {
+            $sql .= " AND DATE(r.fecha_reserva) >= ?";
+            $params[] = $filters['fecha_desde'];
+        }
+        
+        // Filtro por fecha hasta
+        if (!empty($filters['fecha_hasta'])) {
+            $sql .= " AND DATE(r.fecha_reserva) <= ?";
+            $params[] = $filters['fecha_hasta'];
+        }
+        
+        // Filtro por estado
+        if (!empty($filters['estado'])) {
+            $sql .= " AND r.estado = ?";
+            $params[] = $filters['estado'];
+        }
+        
+        $sql .= " ORDER BY r.fecha_reserva ASC, r.hora_reserva ASC";
+        
+        return $this->connection->fetchAll($sql, $params);
+    }
+
+    /**
+     * Obtener reservaciones futuras filtradas por restaurante
+     */
+    public function getFutureReservationsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT 
+                    r.id_reservacion,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.num_personas,
+                    r.estado,
+                    r.fecha_creacion,
+                    u.nombre as cliente_nombre,
+                    u.correo as cliente_email,
+                    u.telefono as cliente_telefono,
+                    m.numero as mesa_numero,
+                    rest.nombre as restaurante_nombre
+                FROM reservacion r
+                INNER JOIN usuario u ON r.id_usuario = u.id_usuario
+                INNER JOIN mesa m ON r.id_mesa = m.id_mesa
+                INNER JOIN restaurante rest ON r.id_restaurante = rest.id_restaurante
+                WHERE DATE(r.fecha_reserva) >= CURDATE()
+                AND r.id_restaurante = ?
+                ORDER BY r.fecha_reserva ASC, r.hora_reserva ASC";
+        
+        return $this->connection->fetchAll($sql, [$restaurantId]);
+    }
+
+    /**
+     * Obtener estadísticas del día filtradas por restaurante
+     */
+    public function getTodayStatsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT 
+                    COUNT(*) as total_reservaciones,
+                    SUM(r.num_personas) as total_comensales,
+                    SUM(CASE WHEN r.estado = 'noshow' THEN 1 ELSE 0 END) as total_noshows,
+                    AVG(r.num_personas) as promedio_personas
+                FROM reservacion r
+                WHERE DATE(r.fecha_reserva) = CURDATE()
+                AND r.id_restaurante = ?";
+        
+        return $this->connection->fetchOne($sql, [$restaurantId]);
+    }
+
+    /**
+     * Obtener estadísticas de ayer filtradas por restaurante
+     */
+    public function getYesterdayStatsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT 
+                    COUNT(*) as total_reservaciones,
+                    SUM(r.num_personas) as total_comensales,
+                    SUM(CASE WHEN r.estado = 'noshow' THEN 1 ELSE 0 END) as total_noshows
+                FROM reservacion r
+                WHERE DATE(r.fecha_reserva) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                AND r.id_restaurante = ?";
+        
+        return $this->connection->fetchOne($sql, [$restaurantId]);
+    }
+
+    /**
+     * Obtener disponibilidad por franjas horarias filtrada por restaurante
+     */
+    public function getTimeSlotAvailabilityByRestaurant($restaurantId, $date = null)
+    {
+        if ($date === null) {
+            $date = date('Y-m-d');
+        }
+
+        $sql = "SELECT 
+                    TIME_FORMAT(r.hora_reserva, '%H:%i') as franja_horaria,
+                    COUNT(*) as reservaciones_activas,
+                    SUM(r.num_personas) as personas_reservadas
+                FROM reservacion r
+                WHERE DATE(r.fecha_reserva) = ? 
+                AND r.estado IN ('confirmada', 'check_in')
+                AND r.id_restaurante = ?
+                GROUP BY TIME_FORMAT(r.hora_reserva, '%H:%i')
+                ORDER BY r.hora_reserva";
+        
+        return $this->connection->fetchAll($sql, [$date, $restaurantId]);
+    }
+
+    /**
+     * Obtener clientes con estadísticas filtrado por restaurante
+     */
+    public function getClientsWithStatsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT 
+                    u.id_usuario,
+                    u.nombre,
+                    u.correo,
+                    u.telefono,
+                    u.fecha_registro,
+                    COUNT(r.id_reservacion) as total_reservaciones,
+                    MAX(r.fecha_reserva) as ultima_reserva
+                FROM usuario u
+                INNER JOIN reservacion r ON u.id_usuario = r.id_usuario
+                WHERE u.rol = 2
+                AND r.id_restaurante = ?
+                GROUP BY u.id_usuario, u.nombre, u.correo, u.telefono, u.fecha_registro
+                ORDER BY total_reservaciones DESC";
+        
+        return $this->connection->fetchAll($sql, [$restaurantId]);
+    }
+
+    /**
+     * Obtener total de reservaciones por restaurante
+     */
+    public function getTotalReservationsByRestaurant($restaurantId)
+    {
+        $sql = "SELECT COUNT(*) as total FROM reservacion WHERE id_restaurante = ?";
+        $result = $this->connection->fetchOne($sql, [$restaurantId]);
+        return (int)($result['total'] ?? 0);
+    }
 }
 ?>

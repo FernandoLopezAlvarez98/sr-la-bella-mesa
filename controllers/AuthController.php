@@ -176,6 +176,14 @@ class AuthController
     }
 
     /**
+     * Obtiene el rol del usuario actual
+     */
+    public function getCurrentUserRole()
+    {
+        return isset($_SESSION['user_role']) ? $_SESSION['user_role'] : null;
+    }
+
+    /**
      * Registra un nuevo usuario en el sistema
      */
     public function register($nombre, $correo, $telefono, $password, $confirmPassword)

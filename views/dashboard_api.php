@@ -3,6 +3,7 @@ require_once '../controllers/AuthController.php';
 require_once '../models/Reservation.php';
 require_once '../models/Table.php';
 require_once '../models/User.php';
+require_once '../models/Restaurant.php';
 
 // Verificar autenticación
 $authController = new AuthController();
@@ -11,6 +12,12 @@ if (!$authController->isAuthenticated()) {
     echo json_encode(['error' => 'No autorizado']);
     exit;
 }
+
+// Obtener el restaurante del administrador actual
+$userId = $authController->getCurrentUserId();
+$restaurantModel = new Restaurant();
+$adminRestaurant = $restaurantModel->getRestaurantByUserId($userId);
+$adminRestaurantId = $adminRestaurant ? $adminRestaurant['id_restaurante'] : null;
 
 header('Content-Type: application/json');
 
@@ -23,15 +30,26 @@ try {
 
     switch ($action) {
         case 'today_reservations':
-            $reservations = $reservationModel->getTodayReservations();
+            if ($adminRestaurantId) {
+                $reservations = $reservationModel->getTodayReservationsByRestaurant($adminRestaurantId);
+            } else {
+                $reservations = [];
+            }
             echo json_encode(['success' => true, 'data' => $reservations]);
             break;
 
         case 'today_stats':
-            $todayStats = $reservationModel->getTodayStats();
-            $yesterdayStats = $reservationModel->getYesterdayStats();
-            $occupancyStats = $tableModel->getOccupancyStats();
-            $yesterdayOccupancy = $tableModel->getOccupancyStats(date('Y-m-d', strtotime('-1 day')));
+            if ($adminRestaurantId) {
+                $todayStats = $reservationModel->getTodayStatsByRestaurant($adminRestaurantId);
+                $yesterdayStats = $reservationModel->getYesterdayStatsByRestaurant($adminRestaurantId);
+                $occupancyStats = $tableModel->getOccupancyStatsByRestaurant($adminRestaurantId);
+                $yesterdayOccupancy = $tableModel->getOccupancyStatsByRestaurant($adminRestaurantId, date('Y-m-d', strtotime('-1 day')));
+            } else {
+                $todayStats = ['total_reservaciones' => 0, 'total_comensales' => 0, 'total_noshows' => 0];
+                $yesterdayStats = ['total_reservaciones' => 0, 'total_comensales' => 0, 'total_noshows' => 0];
+                $occupancyStats = ['porcentaje_ocupacion' => 0, 'total_mesas' => 0, 'mesas_reservadas' => 0];
+                $yesterdayOccupancy = ['porcentaje_ocupacion' => 0];
+            }
             
             // Asegurar valores por defecto
             $todayReservations = intval($todayStats['total_reservaciones'] ?? 0);
@@ -92,14 +110,23 @@ try {
             break;
 
         case 'tables_status':
-            $tables = $tableModel->getTablesWithStatus();
+            if ($adminRestaurantId) {
+                $tables = $tableModel->getTablesWithStatusByRestaurant($adminRestaurantId);
+            } else {
+                $tables = [];
+            }
             echo json_encode(['success' => true, 'data' => $tables]);
             break;
 
         case 'time_slots':
             $date = $_GET['date'] ?? date('Y-m-d');
-            $timeSlots = $reservationModel->getTimeSlotAvailability($date);
-            $occupancyStats = $tableModel->getOccupancyStats($date);
+            if ($adminRestaurantId) {
+                $timeSlots = $reservationModel->getTimeSlotAvailabilityByRestaurant($adminRestaurantId, $date);
+                $occupancyStats = $tableModel->getOccupancyStatsByRestaurant($adminRestaurantId, $date);
+            } else {
+                $timeSlots = [];
+                $occupancyStats = ['total_mesas' => 0];
+            }
             $totalTables = $occupancyStats['total_mesas'] ?? 15; // Valor por defecto
             
             // Generar franjas horarias de 12:00 a 22:00
@@ -222,7 +249,11 @@ try {
             break;
 
         case 'get_clients':
-            $clients = $userModel->getAllClients();
+            if ($adminRestaurantId) {
+                $clients = $reservationModel->getClientsWithStatsByRestaurant($adminRestaurantId);
+            } else {
+                $clients = $userModel->getAllClients();
+            }
             echo json_encode(['success' => true, 'data' => $clients]);
             break;
 
@@ -236,7 +267,11 @@ try {
                 break;
             }
             
-            $tables = $tableModel->getAvailableTables($date, $time, $capacity);
+            if ($adminRestaurantId) {
+                $tables = $tableModel->getAvailableTablesByRestaurant($adminRestaurantId, $date, $time, $capacity);
+            } else {
+                $tables = $tableModel->getAvailableTables($date, $time, $capacity);
+            }
             echo json_encode(['success' => true, 'data' => $tables]);
             break;
 
@@ -250,10 +285,15 @@ try {
             error_log("=== CREAR RESERVA - DATOS RECIBIDOS ===");
             error_log("POST data: " . print_r($_POST, true));
             
-            // Obtener el primer restaurante disponible como defecto
-            $restaurantQuery = "SELECT id_restaurante FROM restaurante LIMIT 1";
-            $restaurant = Connection::getInstance()->fetchOne($restaurantQuery);
-            $defaultRestaurantId = $restaurant ? $restaurant['id_restaurante'] : null;
+            // Usar el restaurante del administrador actual
+            $defaultRestaurantId = $adminRestaurantId;
+            
+            if (!$defaultRestaurantId) {
+                // Si el admin no tiene restaurante asignado, obtener el primero disponible (fallback)
+                $restaurantQuery = "SELECT id_restaurante FROM restaurante LIMIT 1";
+                $restaurant = Connection::getInstance()->fetchOne($restaurantQuery);
+                $defaultRestaurantId = $restaurant ? $restaurant['id_restaurante'] : null;
+            }
             
             if (!$defaultRestaurantId) {
                 echo json_encode(['success' => false, 'message' => 'No hay restaurantes configurados en el sistema']);
@@ -355,11 +395,16 @@ try {
             break;
 
         case 'get_clients_with_stats':
-            $clients = $userModel->getClientsWithStats();
+            if ($adminRestaurantId) {
+                $clients = $reservationModel->getClientsWithStatsByRestaurant($adminRestaurantId);
+            } else {
+                $clients = $userModel->getClientsWithStats();
+            }
             echo json_encode(['success' => true, 'data' => $clients]);
             break;
 
         case 'get_client_stats':
+            // Por ahora usamos las estadísticas generales, pero podrían filtrarse
             $stats = $userModel->getClientStats();
             echo json_encode(['success' => true, 'data' => $stats]);
             break;
@@ -591,9 +636,14 @@ try {
             }
 
             try {
-                // Obtener todas las mesas que tengan capacidad suficiente
-                $sql = "SELECT id_mesa, numero, capacidad FROM mesa WHERE capacidad >= ? ORDER BY numero";
-                $allTables = Connection::getInstance()->fetchAll($sql, [$capacity]);
+                // Obtener todas las mesas del restaurante del admin que tengan capacidad suficiente
+                if ($adminRestaurantId) {
+                    $sql = "SELECT id_mesa, numero, capacidad FROM mesa WHERE id_restaurante = ? AND capacidad >= ? ORDER BY numero";
+                    $allTables = Connection::getInstance()->fetchAll($sql, [$adminRestaurantId, $capacity]);
+                } else {
+                    $sql = "SELECT id_mesa, numero, capacidad FROM mesa WHERE capacidad >= ? ORDER BY numero";
+                    $allTables = Connection::getInstance()->fetchAll($sql, [$capacity]);
+                }
 
                 $availableTables = [];
                 foreach ($allTables as $table) {
@@ -630,8 +680,13 @@ try {
         
         case 'get_all_tables':
             try {
-                $tables = $tableModel->getAllTables();
-                $stats = $tableModel->getTablesStats();
+                if ($adminRestaurantId) {
+                    $tables = $tableModel->getAllTablesByRestaurant($adminRestaurantId);
+                    $stats = $tableModel->getTablesStatsByRestaurant($adminRestaurantId);
+                } else {
+                    $tables = $tableModel->getAllTables();
+                    $stats = $tableModel->getTablesStats();
+                }
                 echo json_encode([
                     'success' => true, 
                     'data' => $tables,
@@ -646,7 +701,11 @@ try {
         case 'get_tables_with_status':
             try {
                 $date = $_GET['date'] ?? date('Y-m-d');
-                $tables = $tableModel->getTablesWithStatus($date);
+                if ($adminRestaurantId) {
+                    $tables = $tableModel->getTablesWithStatusByRestaurant($adminRestaurantId, $date);
+                } else {
+                    $tables = $tableModel->getTablesWithStatus($date);
+                }
                 echo json_encode(['success' => true, 'data' => $tables]);
             } catch (Exception $e) {
                 error_log("Error al obtener mesas con estado: " . $e->getMessage());
@@ -692,15 +751,20 @@ try {
                 break;
             }
             
-            // Si no se proporciona restaurante, obtener el primero disponible
+            // Si no se proporciona restaurante, usar el del administrador
             if (empty($restauranteId)) {
-                $sqlRestaurant = "SELECT id_restaurante FROM restaurante LIMIT 1";
-                $restaurant = Connection::getInstance()->fetchOne($sqlRestaurant);
-                if ($restaurant) {
-                    $restauranteId = $restaurant['id_restaurante'];
+                if ($adminRestaurantId) {
+                    $restauranteId = $adminRestaurantId;
                 } else {
-                    echo json_encode(['success' => false, 'message' => 'No hay restaurantes registrados']);
-                    break;
+                    // Fallback al primer restaurante
+                    $sqlRestaurant = "SELECT id_restaurante FROM restaurante LIMIT 1";
+                    $restaurant = Connection::getInstance()->fetchOne($sqlRestaurant);
+                    if ($restaurant) {
+                        $restauranteId = $restaurant['id_restaurante'];
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'No hay restaurantes registrados']);
+                        break;
+                    }
                 }
             }
             
@@ -780,8 +844,13 @@ try {
 
         case 'get_tables_stats':
             try {
-                $stats = $tableModel->getTablesStats();
-                $occupancy = $tableModel->getOccupancyStats();
+                if ($adminRestaurantId) {
+                    $stats = $tableModel->getTablesStatsByRestaurant($adminRestaurantId);
+                    $occupancy = $tableModel->getOccupancyStatsByRestaurant($adminRestaurantId);
+                } else {
+                    $stats = $tableModel->getTablesStats();
+                    $occupancy = $tableModel->getOccupancyStats();
+                }
                 echo json_encode([
                     'success' => true, 
                     'data' => array_merge($stats ?: [], $occupancy ?: [])

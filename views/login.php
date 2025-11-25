@@ -17,6 +17,8 @@ if ($_POST) {
         // Redirigir según el rol del usuario
         if ($result['rol'] == 1) {
             header('Location: dashboard_admin.php'); // Admin/Restaurante
+        } elseif ($result['rol'] == 3) {
+            header('Location: dashboardSuperAdmin.php'); // Super Administrador
         } else {
             header('Location: dashboardUser.php'); // Usuario normal
         }

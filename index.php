@@ -1,4 +1,9 @@
 <?php
+require_once 'models/Restaurant.php';
+
+// Obtener los 3 restaurantes más visitados
+$restaurantModel = new Restaurant();
+$topRestaurants = $restaurantModel->getMostVisitedRestaurants(3);
 ?>
 
 <!DOCTYPE html>
@@ -142,26 +147,26 @@
       <div class="row">
         <div class="col-md-3 col-6">
           <div class="stat-item">
+            <div class="stat-number" data-target="<?php echo count($topRestaurants) > 0 ? count($restaurantModel->getAllRestaurants()) : 12; ?>">0</div>
+            <div class="stat-label"><i class="fas fa-store me-2"></i>Restaurantes Afiliados</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
+            <div class="stat-number" data-target="5000">0</div>
+            <div class="stat-label"><i class="fas fa-calendar-check me-2"></i>Reservaciones Exitosas</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
             <div class="stat-number" data-target="15">0</div>
-            <div class="stat-label">Años de Experiencia</div>
+            <div class="stat-label"><i class="fas fa-city me-2"></i>Ciudades Disponibles</div>
           </div>
         </div>
         <div class="col-md-3 col-6">
           <div class="stat-item">
-            <div class="stat-number" data-target="50000">0</div>
-            <div class="stat-label">Clientes Satisfechos</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="stat-item">
-            <div class="stat-number" data-target="25">0</div>
-            <div class="stat-label">Chefs Expertos</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="stat-item">
-            <div class="stat-number" data-target="200">0</div>
-            <div class="stat-label">Platos Únicos</div>
+            <div class="stat-number" data-target="98">0</div>
+            <div class="stat-label"><i class="fas fa-smile me-2"></i>% Satisfacción</div>
           </div>
         </div>
       </div>
@@ -179,54 +184,57 @@
     </div>
   </section>
 
-  <!-- NUEVA SECCIÓN: Menú Interactivo -->
+  <!-- SECCIÓN: Tipos de Cocina -->
   <section class="menu-section py-5 fade-in">
     <div class="container">
-      <h2 class="text-center mb-5">Nuestro Menú Destacado</h2>
-      <div class="row">
-        <div class="col-md-6 mb-4">
-          <div class="menu-category">
-            <h4><i class="fas fa-drumstick-bite"></i> Platos Principales</h4>
-            <div class="menu-item">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <h6>Salmón a la Parrilla</h6>
-                  <small>Con vegetales mediterráneos y salsa de limón</small>
-                </div>
-                <span class="price">$450</span>
-              </div>
-            </div>
-            <div class="menu-item">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <h6>Filete Wellington</h6>
-                  <small>Envuelto en hojaldre con champiñones</small>
-                </div>
-                <span class="price">$580</span>
-              </div>
+      <h2 class="text-center mb-2">Explora por Tipo de Cocina</h2>
+      <p class="text-center text-muted mb-5">Encuentra el sabor perfecto para cada ocasión</p>
+      <div class="row g-4">
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🇲🇽</div>
+              <h6 class="mb-0">Mexicana</h6>
             </div>
           </div>
         </div>
-        <div class="col-md-6 mb-4">
-          <div class="menu-category">
-            <h4><i class="fas fa-birthday-cake"></i> Postres</h4>
-            <div class="menu-item">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <h6>Tiramisú de la Casa</h6>
-                  <small>Receta tradicional italiana</small>
-                </div>
-                <span class="price">$180</span>
-              </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🇮🇹</div>
+              <h6 class="mb-0">Italiana</h6>
             </div>
-            <div class="menu-item">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <h6>Chocolate Soufflé</h6>
-                  <small>Con helado de vainilla</small>
-                </div>
-                <span class="price">$220</span>
-              </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🇯🇵</div>
+              <h6 class="mb-0">Japonesa</h6>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🇦🇷</div>
+              <h6 class="mb-0">Argentina</h6>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🌎</div>
+              <h6 class="mb-0">Internacional</h6>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card border-0 shadow-sm h-100 text-center cuisine-card" style="cursor: pointer; transition: all 0.3s;">
+            <div class="card-body py-4">
+              <div class="mb-3" style="font-size: 2.5rem;">🍰</div>
+              <h6 class="mb-0">Postres & Café</h6>
             </div>
           </div>
         </div>
@@ -234,39 +242,100 @@
     </div>
   </section>
 
+  <style>
+    .cuisine-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+  </style>
+
   
   <!-- Información Restaurantes -->
   <section id="restaurants" class="py-5 fade-in">
     <div class="container">
-      <h2 class="text-center mb-4">Nuestros Restaurantes</h2>
+      <h2 class="text-center mb-2">Restaurantes más visitados</h2>
       <div class="row">
-        <div class="col-md-4 mb-3">
-          <div class="card">
-            <img src="/src/images/1.2.jpg" class="card-img-top" alt="Restaurante 1">
-            <div class="card-body">
-              <h5 class="card-title">Restaurante Gourmet</h5>
-              <p class="card-text">Especializado en cocina internacional con ingredientes premium.</p>
+        <?php if (!empty($topRestaurants)): ?>
+          <?php $topPosition = 1; ?>
+          <?php foreach ($topRestaurants as $restaurant): ?>
+            <div class="col-md-4 mb-3">
+              <div class="card h-100 shadow-sm">
+                <div class="position-relative">
+                  <img src="<?php echo htmlspecialchars($restaurant['foto_portada'] ?: '/src/images/1.jpg'); ?>" 
+                       class="card-img-top" 
+                       alt="<?php echo htmlspecialchars($restaurant['nombre']); ?>"
+                       style="height: 200px; object-fit: cover;">
+                  <?php if ($restaurant['abierto']): ?>
+                    <span class="badge bg-success position-absolute top-0 start-0 m-2">
+                      <i class="fas fa-clock"></i> Abierto
+                    </span>
+                  <?php endif; ?>
+                  <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">
+                    <i class="fas fa-star"></i> <?php echo number_format($restaurant['calificacion'] ?? 4.0, 1); ?>
+                  </span>
+                </div>
+                <div class="card-body">
+                  <h5 class="card-title"><?php echo htmlspecialchars($restaurant['nombre']); ?></h5>
+                  <p class="card-text text-muted mb-2">
+                    <i class="fas fa-utensils me-1"></i> <?php echo htmlspecialchars($restaurant['tipo_cocina'] ?? 'Internacional'); ?>
+                  </p>
+                  <p class="card-text small mb-2">
+                    <i class="fas fa-map-marker-alt me-1 text-danger"></i> 
+                    <?php echo htmlspecialchars(substr($restaurant['direccion'], 0, 50)) . (strlen($restaurant['direccion']) > 50 ? '...' : ''); ?>
+                  </p>
+                  <p class="card-text small mb-2">
+                    <i class="fas fa-clock me-1 text-info"></i> 
+                    <?php echo date('g:i A', strtotime($restaurant['horario_apertura'])); ?> - 
+                    <?php echo date('g:i A', strtotime($restaurant['horario_cierre'])); ?>
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="">
+                      <i class="fas fa-trophy me-1"></i> Top <?php echo $topPosition; ?> en visitas
+                    </span>
+                    <?php if (!empty($restaurant['precio_rango'])): ?>
+                      <span class="badge bg-light text-dark"><?php echo htmlspecialchars($restaurant['precio_rango']); ?></span>
+                    <?php endif; ?>
+                  </div>
+                  <?php $topPosition++; ?>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                  <a href="views/login.php" class="btn btn-primary w-100">
+                    <i class="fas fa-calendar-alt me-1"></i> Reservar ahora
+                  </a>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <!-- Restaurantes por defecto si no hay datos -->
+          <div class="col-md-4 mb-3">
+            <div class="card">
+              <img src="/src/images/1.2.jpg" class="card-img-top" alt="Restaurante 1">
+              <div class="card-body">
+                <h5 class="card-title">Restaurante Gourmet</h5>
+                <p class="card-text">Especializado en cocina internacional con ingredientes premium.</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <div class="card">
-            <img src="/src/images/2.2.jpg" class="card-img-top" alt="Restaurante 2">
-            <div class="card-body">
-              <h5 class="card-title">La Cocina Mexicana</h5>
-              <p class="card-text">Auténticos sabores mexicanos con un toque moderno.</p>
+          <div class="col-md-4 mb-3">
+            <div class="card">
+              <img src="/src/images/2.2.jpg" class="card-img-top" alt="Restaurante 2">
+              <div class="card-body">
+                <h5 class="card-title">La Cocina Mexicana</h5>
+                <p class="card-text">Auténticos sabores mexicanos con un toque moderno.</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="col-md-4 mb-3">
-          <div class="card">
-            <img src="/src/images/3.2.jpg" class="card-img-top" alt="Restaurante 3">
-            <div class="card-body">
-              <h5 class="card-title">Postres Deliciosos</h5>
-              <p class="card-text">Variedad de postres caseros y exclusivos para endulzar tu día.</p>
+          <div class="col-md-4 mb-3">
+            <div class="card">
+              <img src="/src/images/3.2.jpg" class="card-img-top" alt="Restaurante 3">
+              <div class="card-body">
+                <h5 class="card-title">Postres Deliciosos</h5>
+                <p class="card-text">Variedad de postres caseros y exclusivos para endulzar tu día.</p>
+              </div>
             </div>
           </div>
-        </div>
+        <?php endif; ?>
       </div>
     </div>
   </section>
@@ -274,7 +343,7 @@
   <!-- NUEVA SECCIÓN: Testimonios -->
   <section class="testimonials py-5 fade-in">
     <div class="container">
-      <h2 class="text-center mb-5">Lo Que Dicen Nuestros Clientes</h2>
+      <h2 class="text-center mb-5">Comentarios de los clientes</h2>
       <div class="row">
         <div class="col-md-4 mb-4">
           <div class="testimonial-card">
@@ -753,55 +822,7 @@ document.getElementById("loginForm").addEventListener("submit", function(e) {
       });
     });
 
-    // 10. Sistema de favoritos local
-    function initFavorites() {
-      const favoriteButtons = document.querySelectorAll('.favorite-btn');
-      const favorites = JSON.parse(localStorage.getItem('restaurantFavorites') || '[]');
-      
-      favoriteButtons.forEach(btn => {
-        const restaurantId = btn.getAttribute('data-restaurant-id');
-        if (favorites.includes(restaurantId)) {
-          btn.classList.add('favorited');
-          btn.innerHTML = '<i class="fas fa-heart"></i>';
-        }
-        
-        btn.addEventListener('click', function() {
-          const id = this.getAttribute('data-restaurant-id');
-          let currentFavorites = JSON.parse(localStorage.getItem('restaurantFavorites') || '[]');
-          
-          if (currentFavorites.includes(id)) {
-            currentFavorites = currentFavorites.filter(fav => fav !== id);
-            this.classList.remove('favorited');
-            this.innerHTML = '<i class="far fa-heart"></i>';
-            showNotification('Restaurante removido de favoritos');
-          } else {
-            currentFavorites.push(id);
-            this.classList.add('favorited');
-            this.innerHTML = '<i class="fas fa-heart"></i>';
-            showNotification('Restaurante agregado a favoritos');
-          }
-          
-          localStorage.setItem('restaurantFavorites', JSON.stringify(currentFavorites));
-        });
-      });
-    }
-
-    // Agregar botones de favoritos a las tarjetas de restaurantes
-    document.querySelectorAll('#restaurants .card').forEach((card, index) => {
-      const favoriteBtn = document.createElement('button');
-      favoriteBtn.className = 'btn btn-outline-danger favorite-btn position-absolute top-0 end-0 m-2';
-      favoriteBtn.setAttribute('data-restaurant-id', `restaurant-${index}`);
-      favoriteBtn.innerHTML = '<i class="far fa-heart"></i>';
-      favoriteBtn.style.zIndex = '10';
-      
-      card.style.position = 'relative';
-      card.appendChild(favoriteBtn);
-    });
-
-    // Inicializar sistema de favoritos
-    initFavorites();
-
-    // 11. Modo oscuro toggle
+    // 10. Modo oscuro toggle
     function initDarkMode() {
       const darkModeBtn = document.createElement('button');
       darkModeBtn.className = 'btn btn-outline-secondary position-fixed';

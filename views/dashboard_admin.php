@@ -2,10 +2,12 @@
 require_once '../controllers/AuthController.php';
 require_once '../models/Reservation.php';
 require_once '../models/User.php';
+require_once '../models/Restaurant.php';
 
 $authController = new AuthController();
 $reservationModel = new Reservation();
 $userModel = new User();
+$restaurantModel = new Restaurant();
 
 // Verificar si el usuario está autenticado
 if (!$authController->isAuthenticated()) {
@@ -18,6 +20,11 @@ $userId = $authController->getCurrentUserId();
 $userEmail = $authController->getCurrentUserEmail();
 $userName = $authController->getCurrentUserName();
 
+// Obtener el restaurante del administrador
+$adminRestaurant = $restaurantModel->getRestaurantByUserId($userId);
+$restaurantId = $adminRestaurant ? $adminRestaurant['id_restaurante'] : null;
+$restaurantName = $adminRestaurant ? $adminRestaurant['nombre'] : 'Sin Restaurante Asignado';
+
 // Manejar logout
 if (isset($_GET['logout'])) {
     $authController->logout();
@@ -25,33 +32,49 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
-// Obtener reservas del día
+// Obtener reservas del día (filtradas por restaurante)
 try {
-    $todayReservations = $reservationModel->getTodayReservations();
+    if ($restaurantId) {
+        $todayReservations = $reservationModel->getTodayReservationsByRestaurant($restaurantId);
+    } else {
+        $todayReservations = [];
+    }
 } catch (Exception $e) {
     $todayReservations = [];
     error_log("Error al obtener reservas del día: " . $e->getMessage());
 }
 
-// Obtener reservas futuras
+// Obtener reservas futuras (filtradas por restaurante)
 try {
-    $futureReservations = $reservationModel->getFutureReservations();
+    if ($restaurantId) {
+        $futureReservations = $reservationModel->getFutureReservationsByRestaurant($restaurantId);
+    } else {
+        $futureReservations = [];
+    }
 } catch (Exception $e) {
     $futureReservations = [];
     error_log("Error al obtener reservas futuras: " . $e->getMessage());
 }
 
-// Obtener todas las reservas para filtrado
+// Obtener todas las reservas para filtrado (filtradas por restaurante)
 try {
-    $allReservations = $reservationModel->getAllReservations();
+    if ($restaurantId) {
+        $allReservations = $reservationModel->getAllReservationsByRestaurant($restaurantId);
+    } else {
+        $allReservations = [];
+    }
 } catch (Exception $e) {
     $allReservations = [];
     error_log("Error al obtener todas las reservas: " . $e->getMessage());
 }
 
-// Obtener clientes con estadísticas
+// Obtener clientes con estadísticas (filtrados por restaurante)
 try {
-    $clientsWithStats = $userModel->getClientsWithStats();
+    if ($restaurantId) {
+        $clientsWithStats = $reservationModel->getClientsWithStatsByRestaurant($restaurantId);
+    } else {
+        $clientsWithStats = [];
+    }
 } catch (Exception $e) {
     $clientsWithStats = [];
     error_log("Error al obtener clientes: " . $e->getMessage());
@@ -88,7 +111,7 @@ function getStatusClass($estado) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administrador - Sistema de Reservas</title>
+    <title><?php echo htmlspecialchars($restaurantName); ?> - Panel de Administración</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -321,7 +344,7 @@ function getStatusClass($estado) {
             <!-- Logo and Toggle Button -->
             <div class="logo">
                 <i class="fas fa-utensils fa-2x"></i>
-                <h2>Admin Panel</h2>
+                <h2><?php echo htmlspecialchars(substr($restaurantName, 0, 15)); ?></h2>
                 <button id="collapse-sidebar" class="d-md-none" aria-label="Toggle sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -406,7 +429,7 @@ function getStatusClass($estado) {
                     <button id="toggle-sidebar" class="sidebar-toggler" aria-label="Toggle sidebar">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <h1 class="page-title">¡Bienvenido <?php echo htmlspecialchars($userName); ?>! - Dashboard de Administración</h1>
+                    <h1 class="page-title"><?php echo htmlspecialchars($restaurantName); ?> - Panel de Control</h1>
                 </div>
                 <div class="header-right">
                     <!-- Dark mode toggle -->
@@ -1374,6 +1397,10 @@ function getStatusClass($estado) {
 
 <!-- JavaScript para cargar datos dinámicos -->
 <script>
+// Variables globales del restaurante del administrador
+const ADMIN_RESTAURANT_ID = '<?php echo $restaurantId ?? ''; ?>';
+const ADMIN_RESTAURANT_NAME = '<?php echo addslashes($restaurantName ?? ''); ?>';
+
 // Actualizar datos cada 5 minutos
 setInterval(function() {
     loadTodayStats();
@@ -2984,7 +3011,7 @@ function showClientsView(container) {
                 <button id="toggle-sidebar" class="sidebar-toggler" aria-label="Toggle sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1 class="page-title">Gestión de Clientes - Sistema de Reservas</h1>
+                <h1 class="page-title">Gestión de Clientes - ${ADMIN_RESTAURANT_NAME}</h1>
             </div>
             <div class="header-right">
                 <!-- Dark mode toggle -->
@@ -3233,7 +3260,7 @@ function showTablesView(container) {
                 <button id="toggle-sidebar" class="sidebar-toggler" aria-label="Toggle sidebar">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1 class="page-title">Gestión de Mesas - Sistema de Reservas</h1>
+                <h1 class="page-title">Gestión de Mesas - ${ADMIN_RESTAURANT_NAME}</h1>
             </div>
             <div class="header-right">
                 <button id="dark-mode-toggle" class="btn btn-icon" aria-label="Toggle dark mode">

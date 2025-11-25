@@ -215,9 +215,9 @@ class User
     }
 
     /**
-     * Obtiene todos los usuarios (para administración)
+     * Obtiene todos los usuarios (para administración) - Versión básica
      */
-    public function getAllUsers($limit = 50, $offset = 0)
+    public function getAllUsersBasic($limit = 50, $offset = 0)
     {
         try {
             $stmt = $this->connection->prepare("SELECT id_usuario, nombre, correo, telefono, rol, fecha_registro FROM usuario ORDER BY fecha_registro DESC LIMIT ? OFFSET ?");
@@ -411,6 +411,231 @@ class User
     {
         $user = $this->getUserByEmail($correo);
         return $user !== null;
+    }
+
+    // ==================== MÉTODOS PARA SUPER ADMIN ====================
+
+    /**
+     * Obtener todos los usuarios del sistema
+     */
+    public function getAllUsers()
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT 
+                    u.id_usuario,
+                    u.nombre,
+                    u.correo,
+                    u.telefono,
+                    u.rol,
+                    u.fecha_registro,
+                    COUNT(DISTINCT r.id_reservacion) as total_reservaciones,
+                    COUNT(DISTINCT rest.id_restaurante) as restaurantes_propios
+                FROM usuario u
+                LEFT JOIN reservacion r ON u.id_usuario = r.id_usuario
+                LEFT JOIN restaurante rest ON u.id_usuario = rest.id_usuario
+                GROUP BY u.id_usuario
+                ORDER BY u.fecha_registro DESC
+            ");
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Error al obtener todos los usuarios: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Crear nuevo usuario (método para Super Admin)
+     */
+    public function create($data)
+    {
+        try {
+            $id = $this->generateUUID();
+            
+            $stmt = $this->connection->prepare("
+                INSERT INTO usuario (id_usuario, nombre, correo, telefono, password_hash, rol)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            
+            $result = $stmt->execute([
+                $id,
+                $data['nombre'],
+                $data['correo'],
+                $data['telefono'] ?? null,
+                $data['password'], // Ya debe venir hasheada
+                $data['rol']
+            ]);
+
+            return $result ? $id : false;
+
+        } catch (PDOException $e) {
+            error_log("Error al crear usuario: " . $e->getMessage());
+            throw new Exception("Error al crear usuario: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener usuario por ID (alias para compatibilidad)
+     */
+    public function getById($id)
+    {
+        return $this->getUserById($id);
+    }
+
+    /**
+     * Obtener total de usuarios
+     */
+    public function getTotalUsers()
+    {
+        try {
+            $stmt = $this->connection->query("SELECT COUNT(*) FROM usuario");
+            return (int)$stmt->fetchColumn();
+
+        } catch (PDOException $e) {
+            error_log("Error al contar usuarios: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtener usuarios registrados recientemente
+     */
+    public function getRecentUsersCount($days = 7)
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT COUNT(*) 
+                FROM usuario 
+                WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+            ");
+            $stmt->execute([$days]);
+            
+            return (int)$stmt->fetchColumn();
+
+        } catch (PDOException $e) {
+            error_log("Error al contar usuarios recientes: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Actualizar usuario
+     */
+    public function update($id, $data)
+    {
+        try {
+            $fields = [];
+            $values = [];
+            
+            if (isset($data['nombre'])) {
+                $fields[] = "nombre = ?";
+                $values[] = $data['nombre'];
+            }
+            
+            if (isset($data['correo'])) {
+                $fields[] = "correo = ?";
+                $values[] = $data['correo'];
+            }
+            
+            if (isset($data['telefono'])) {
+                $fields[] = "telefono = ?";
+                $values[] = $data['telefono'];
+            }
+            
+            if (isset($data['rol'])) {
+                $fields[] = "rol = ?";
+                $values[] = $data['rol'];
+            }
+            
+            if (isset($data['password'])) {
+                $fields[] = "password_hash = ?";
+                $values[] = $data['password'];
+            }
+            
+            if (empty($fields)) {
+                return true; // No hay nada que actualizar
+            }
+            
+            $values[] = $id;
+            
+            $sql = "UPDATE usuario SET " . implode(', ', $fields) . " WHERE id_usuario = ?";
+            $stmt = $this->connection->prepare($sql);
+            
+            return $stmt->execute($values);
+
+        } catch (PDOException $e) {
+            error_log("Error al actualizar usuario: " . $e->getMessage());
+            throw new Exception("Error al actualizar usuario: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Eliminar usuario (solo Super Admin)
+     */
+    public function delete($id)
+    {
+        try {
+            // Primero actualizar reservaciones para mantener integridad
+            $stmt = $this->connection->prepare("
+                UPDATE reservacion 
+                SET id_usuario = NULL 
+                WHERE id_usuario = ?
+            ");
+            $stmt->execute([$id]);
+
+            // Luego eliminar el usuario
+            $stmt = $this->connection->prepare("DELETE FROM usuario WHERE id_usuario = ?");
+            return $stmt->execute([$id]);
+
+        } catch (PDOException $e) {
+            error_log("Error al eliminar usuario: " . $e->getMessage());
+            throw new Exception("Error al eliminar usuario: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtener usuarios por rol
+     */
+    public function getUsersByRole($role)
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                SELECT id_usuario, nombre, correo, telefono, fecha_registro
+                FROM usuario 
+                WHERE rol = ?
+                ORDER BY fecha_registro DESC
+            ");
+            $stmt->execute([$role]);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Error al obtener usuarios por rol: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Cambiar rol de usuario
+     */
+    public function changeRole($userId, $newRole)
+    {
+        try {
+            $stmt = $this->connection->prepare("
+                UPDATE usuario 
+                SET rol = ?
+                WHERE id_usuario = ?
+            ");
+            
+            return $stmt->execute([$newRole, $userId]);
+
+        } catch (PDOException $e) {
+            error_log("Error al cambiar rol de usuario: " . $e->getMessage());
+            throw new Exception("Error al cambiar rol: " . $e->getMessage());
+        }
     }
 }
 ?>
